@@ -25,6 +25,15 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AstPrinter.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Expr.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="helper\genExprClasses.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="LoxError.py">
       <SubType>Code</SubType>
     </Compile>
@@ -35,6 +44,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="test.lox" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="helper\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
