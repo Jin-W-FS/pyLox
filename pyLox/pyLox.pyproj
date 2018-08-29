@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>344ef00b-39c6-4196-8635-e4a8f53ae058</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>pyLox.py</StartupFile>
+    <StartupFile>Parser.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -35,6 +35,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="LoxError.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Parser.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="pyLox.py" />

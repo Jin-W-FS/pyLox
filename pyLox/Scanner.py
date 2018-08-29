@@ -28,13 +28,12 @@ TokenType.KeyMap = { k : TokenType(i) for i, k in enumerate(TokenType.Keys) }
 
 class Token(namedtuple("Token", "type,lexeme,literal,line")):
     def __repr__(self):
-        t = self.type.name
-        if self.literal is not None:
-            v = self.literal
-            if isinstance(v, str): v = repr(v)
+        return '<{}: {}>'.format(self.type.name, str(self))
+    def __str__(self):
+        if isinstance(self.literal, str):
+            return repr(self.literal)
         else:
-            v = self.lexeme
-        return '<{}: {}>'.format(t, v)
+            return self.lexeme
 
 class Scanner:
 
