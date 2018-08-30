@@ -11,3 +11,6 @@ class ParserError(LoxError):
 
 class InterpError(LoxError):
     pass
+
+class RunningError(LoxError):
+    pass

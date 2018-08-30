@@ -30,6 +30,16 @@ class InterpType:
         if isinstance(v, str): return v
         return InterpType.INV
 
+def stringify(v):
+    if v == None: return 'nil'
+    if isinstance(v, str):
+        return repr(v)
+    if isinstance(v, float):
+        s = str(v)
+        if s.endswith('.0'): return s[:-2]
+        return s
+    return str(v)
+
 class Interpreter(Expr.Visitor):
     BinFns = {
         TokenType.EQUAL_EQUAL   :   [(InterpType.Any, InterpType.Any, lambda l, r: l == r)],
@@ -40,7 +50,8 @@ class Interpreter(Expr.Visitor):
         TokenType.LESS_EQUAL    :   [(InterpType.Number, InterpType.Number, lambda l, r: l <= r)],
         TokenType.MINUS         :   [(InterpType.Number, InterpType.Number, lambda l, r: l - r)],
         TokenType.PLUS          :   [(InterpType.Number, InterpType.Number, lambda l, r: l + r),
-                                     (InterpType.String, InterpType.String, lambda l, r: l + r)],
+                                     (InterpType.String, InterpType.Any, lambda l, r: l + stringify(r)),
+                                     (InterpType.Any, InterpType.String, lambda l, r: stringify(l) + r)],
         TokenType.SLASH         :   [(InterpType.Number, InterpType.Number, lambda l, r: l / r)],
         TokenType.STAR          :   [(InterpType.Number, InterpType.Number, lambda l, r: l * r),
                                      (InterpType.String, InterpType.Number, lambda l, r: l * int(r))],
@@ -55,7 +66,10 @@ class Interpreter(Expr.Visitor):
         for tl, tr, fn in self.BinFns[expr.operator.type]:
             l, r = tl(left), tr(right)
             if l == InterpType.INV or r == InterpType.INV: continue
-            return fn(l, r)
+            try:
+                return fn(l, r)
+            except Exception as ex:
+                raise RunningError(expr.operator.line, str(ex))
         else:
             raise InterpError(expr.operator.line, "invalid operand(s) for operator {}".format(expr.operator))
 

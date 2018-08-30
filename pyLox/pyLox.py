@@ -2,7 +2,7 @@ from LoxError import *
 from Parser import Parser
 from Scanner import Scanner
 from AstPrinter import LispPrinter
-from Interpreter import Interpreter
+from Interpreter import Interpreter, stringify
 
 hadError = False
 
@@ -12,7 +12,7 @@ def run(data):
         tokens = Scanner(data).scanTokens()
         ast = Parser(tokens).parse()
         if ast:
-            print(LispPrinter().visit(ast), '=>', repr(Interpreter().visit(ast)))
+            print(LispPrinter().visit(ast), '=>', stringify(Interpreter().visit(ast)))
     except LoxError as ex:
         print(ex)
         hadError = True
