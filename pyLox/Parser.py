@@ -20,6 +20,20 @@ class Parser(object):
         self.current += 1
         return tok
 
+    def parse(self):
+        try:
+            exp = self.expression()
+            if not self.match(TokenType.EOF):
+                tok = self.currToken()
+                raise self.errUnexpToken('EOF')
+            return exp
+        except LoxError as ex:
+            print(ex)
+
+    def errUnexpToken(self, exp):
+        tok = self.currToken()
+        return ParserError(tok.line, "expect {}, got {}".format(exp, tok))
+
     def expression(self):
         return self.equality()
 
@@ -63,20 +77,7 @@ class Parser(object):
             self.nextToken()
             ast = self.expression()
             if not self.match(TokenType.RIGHT_PAREN):
-                tok = self.currToken()
-                raise LoxError(tok.line, "')' expected, got {}".format(tok))
+                raise self.errUnexpToken(')')
             return Expr.Grouping(ast)
         else:
-            tok = self.currToken()
-            raise LoxError(tok.line, "primary expr expected, got {}".format(tok))
-
-
-if __name__ == "__main__":
-    from AstPrinter import *
-    prog = '''
-"Enjoy your " + meat + " and " +
-        bread + ", " + who + "."
-'''
-    tokens = Scanner(prog).scanTokens()
-    ast = Parser(tokens).expression()
-    print(LispPrinter().visit(ast))
+            raise self.errUnexpToken("primary expr")

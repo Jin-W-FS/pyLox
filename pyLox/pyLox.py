@@ -1,15 +1,16 @@
 from LoxError import *
+from Parser import Parser
 from Scanner import Scanner
+from AstPrinter import LispPrinter
 
 hadError = False
 
 def run(data):
     global hadError
     try:
-        scanner = Scanner(data)
-        tokens = scanner.scanTokens()
-        for token in tokens:
-            print(token)
+        tokens = Scanner(data).scanTokens()
+        ast = Parser(tokens).parse()
+        if ast: print(LispPrinter().visit(ast))
     except LoxError as ex:
         print(ex)
         hadError = True

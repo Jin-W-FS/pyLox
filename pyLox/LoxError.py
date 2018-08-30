@@ -5,3 +5,6 @@ class LoxError(RuntimeError):
     def __str__(self):
         line, message = self.args
         return '[line %d] Error: %s' % (line, message)
+
+class ParserError(LoxError):
+    pass
