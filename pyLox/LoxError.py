@@ -8,3 +8,6 @@ class LoxError(RuntimeError):
 
 class ParserError(LoxError):
     pass
+
+class InterpError(LoxError):
+    pass
