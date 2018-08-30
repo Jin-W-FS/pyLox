@@ -35,6 +35,9 @@
     <Compile Include="helper\genExprClasses.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Interpreter.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="LoxError.py">
       <SubType>Code</SubType>
     </Compile>

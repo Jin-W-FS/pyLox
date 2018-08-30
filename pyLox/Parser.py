@@ -78,6 +78,7 @@ class Parser(object):
             ast = self.expression()
             if not self.match(TokenType.RIGHT_PAREN):
                 raise self.errUnexpToken(')')
+            self.nextToken()
             return Expr.Grouping(ast)
         else:
             raise self.errUnexpToken("primary expr")
