@@ -15,24 +15,41 @@ class Parser(object):
         tok = self.currToken()
         return tok.type in args
 
+    def consume(self, type):
+        if self.match(type):
+            return self.nextToken()
+        return None
+
     def nextToken(self):
         tok = self.currToken()
         self.current += 1
         return tok
 
-    def parse(self):
-        try:
-            exp = self.expression()
-            if not self.match(TokenType.EOF):
-                tok = self.currToken()
-                raise self.errUnexpToken('EOF')
-            return exp
-        except LoxError as ex:
-            print(ex)
+    def isAtEnd(self):
+        return self.current >= len(self.tokens) - 1
+        # return self.currToken().type == TokenType.EOF
 
     def errUnexpToken(self, exp):
         tok = self.currToken()
         return ParserError(tok.line, "expect {}, got {}".format(exp, tok))
+
+    def parse(self):
+        stmts = []
+        while not self.isAtEnd():
+            stmts.append(self.statement())
+        return Expr.Program(stmts)
+
+    def statement(self):
+        if self.consume(TokenType.PRINT):
+            ast = self.expression()
+            if not self.consume(TokenType.SEMICOLON):
+                raise self.errUnexpToken(';')
+            return Expr.PrintStmt(ast)
+        else:
+            ast = self.expression()
+            if not self.consume(TokenType.SEMICOLON):
+                raise self.errUnexpToken(';')
+            return Expr.ExprStmt(ast)
 
     def expression(self):
         return self.equality()
@@ -73,12 +90,10 @@ class Parser(object):
                       TokenType.STRING, TokenType.IDENTIFIER,
                       TokenType.TRUE, TokenType.FALSE):
             return Expr.Literal(self.nextToken())
-        elif self.match(TokenType.LEFT_PAREN):
-            self.nextToken()
+        elif self.consume(TokenType.LEFT_PAREN):
             ast = self.expression()
-            if not self.match(TokenType.RIGHT_PAREN):
+            if not self.consume(TokenType.RIGHT_PAREN):
                 raise self.errUnexpToken(')')
-            self.nextToken()
             return Expr.Grouping(ast)
         else:
             raise self.errUnexpToken("primary expr")

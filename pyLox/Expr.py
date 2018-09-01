@@ -1,8 +1,14 @@
 from collections import namedtuple
 
 class Visitor:
-    def visit(self, expr):
-        return expr.accept(self)
+    def visit(self, obj):
+        return obj.accept(self)
+    def visitProgram(self, prog):
+        pass
+    def visitPrintStmt(self, stmt):
+        pass
+    def visitExprStmt(self, stmt):
+        pass
     def visitBinaryExpr(self, expr):
         pass
     def visitGroupingExpr(self, expr):
@@ -27,3 +33,20 @@ class Literal(namedtuple("Literal", "value")):
 class Unary(namedtuple("Unary", "operator, right")):
     def accept(self, visitor):
         return visitor.visitUnaryExpr(self)
+    def accept(self, visitor):
+        return visitor.visitGroupingExpr(self)
+
+
+# Statements:
+
+class PrintStmt(namedtuple("Print", "expr")):
+    def accept(self, visitor):
+        return visitor.visitPrintStmt(self)
+
+class ExprStmt(namedtuple("Expr", "expr")):
+    def accept(self, visitor):
+        return visitor.visitExprStmt(self)
+
+class Program(list):
+    def accept(self, visitor):
+        return visitor.visitProgram(self)

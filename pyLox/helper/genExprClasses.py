@@ -1,13 +1,23 @@
 exprs = {
-      "Binary"   : "left, operator, right",
-      "Grouping" : "expression",                      
-      "Literal"  : "value",                         
-      "Unary"    : "operator, right",
+    "Binary"    : "left, operator, right",
+    "Grouping"  : "expression",                      
+    "Literal"   : "value",                         
+    "Unary"     : "operator, right",
 }
 
+stmts = {
+    "Print"     : "expr",
+    "Expr"      : "expr",
+}
+
+print("from collections import namedtuple\n\n")
 print('''class Visitor:
-    def visit(self, expr):
-        return expr.accept(self)''')
+    def visit(self, obj):
+        return obj.accept(self)
+    def visitProgram(self, prog):
+        pass''')
+for k in stmts.keys():
+    print('''    def visit{type}Stmt(self, stmt):\n        pass'''.format(type=k))
 for k in exprs.keys():
     print('''    def visit{type}Expr(self, expr):\n        pass'''.format(type=k))
 
@@ -16,3 +26,16 @@ for k, v in exprs.items():
 class {type}(namedtuple("{type}", "{fields}")):
     def accept(self, visitor):
         return visitor.visit{type}Expr(self)'''.format(type=k, fields=v))
+
+print("\n\n# Statements:")
+for k, v in stmts.items():
+    print('''
+class {type}Stmt(namedtuple("{type}", "{fields}")):
+    def accept(self, visitor):
+        visitor.visit{type}Stmt(self)'''.format(type=k, fields=v))
+
+print('''
+class Program(list):
+    def accept(self, visitor):
+        visitor.visitProgram(self)
+''')

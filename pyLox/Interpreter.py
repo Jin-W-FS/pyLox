@@ -61,6 +61,20 @@ class Interpreter(Expr.Visitor):
         TokenType.BANG          :   [(InterpType.Boolean, lambda v: not v)],
     }
 
+    def visitProgram(self, prog):
+        for stmt in prog:
+            rlt = self.visit(stmt)
+        return rlt
+
+    def visitPrintStmt(self, stmt):
+        value = self.visit(stmt.expr)
+        print(stringify(value))
+        return None
+
+    def visitExprStmt(self, stmt):
+        value = self.visit(stmt.expr)
+        return value
+
     def visitBinaryExpr(self, expr):
         left, right = self.visit(expr.left), self.visit(expr.right)
         for tl, tr, fn in self.BinFns[expr.operator.type]:

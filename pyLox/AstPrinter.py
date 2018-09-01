@@ -2,6 +2,16 @@ import Expr
 from Scanner import *
 
 class LispPrinter(Expr.Visitor):
+    def visitProgram(self, prog):
+        lst = [self.visit(stmt) for stmt in prog]
+        if sum(len(s) for s in lst) < 20:
+            return '(prog {})'.format(' '.join(lst))
+        else:
+            return '(prog\n  {})'.format('\n  '.join(lst))
+    def visitPrintStmt(self, stmt):
+        return '(print {})'.format(self.visit(stmt.expr))
+    def visitExprStmt(self, stmt):
+        return self.visit(stmt.expr)
     def visitBinaryExpr(self, expr):
         return '({} {} {})'.format(expr.operator, self.visit(expr.left), self.visit(expr.right))
     def visitGroupingExpr(self, expr):
