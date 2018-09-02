@@ -12,6 +12,11 @@ class LispPrinter(Expr.Visitor):
         return '(print {})'.format(self.visit(stmt.expr))
     def visitExprStmt(self, stmt):
         return self.visit(stmt.expr)
+    def visitVarStmt(self, stmt):
+        if stmt.initial == None:
+            return '(declvar {})'.format(stmt.name.lexeme)
+        else:
+            return '(declvar {} {})'.format(stmt.name.lexeme, self.visit(stmt.initial))
     def visitBinaryExpr(self, expr):
         return '({} {} {})'.format(expr.operator, self.visit(expr.left), self.visit(expr.right))
     def visitGroupingExpr(self, expr):

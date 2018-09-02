@@ -9,6 +9,8 @@ class Visitor:
         pass
     def visitExprStmt(self, stmt):
         pass
+    def visitVarStmt(self, stmt):
+        pass
     def visitBinaryExpr(self, expr):
         pass
     def visitGroupingExpr(self, expr):
@@ -39,13 +41,17 @@ class Unary(namedtuple("Unary", "operator, right")):
 
 # Statements:
 
-class PrintStmt(namedtuple("Print", "expr")):
+class PrintStmt(namedtuple("PrintStmt", "expr")):
     def accept(self, visitor):
         return visitor.visitPrintStmt(self)
 
-class ExprStmt(namedtuple("Expr", "expr")):
+class ExprStmt(namedtuple("ExprStmt", "expr")):
     def accept(self, visitor):
         return visitor.visitExprStmt(self)
+
+class VarStmt(namedtuple("VarStmt", "name, initial")):
+    def accept(self, visitor):
+        return visitor.visitVarStmt(self)
 
 class Program(list):
     def accept(self, visitor):

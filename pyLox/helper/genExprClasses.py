@@ -8,6 +8,7 @@ exprs = {
 stmts = {
     "Print"     : "expr",
     "Expr"      : "expr",
+    "Var"      : "name, initial"
 }
 
 print("from collections import namedtuple\n\n")
@@ -30,7 +31,7 @@ class {type}(namedtuple("{type}", "{fields}")):
 print("\n\n# Statements:")
 for k, v in stmts.items():
     print('''
-class {type}Stmt(namedtuple("{type}", "{fields}")):
+class {type}Stmt(namedtuple("{type}Stmt", "{fields}")):
     def accept(self, visitor):
         visitor.visit{type}Stmt(self)'''.format(type=k, fields=v))
 

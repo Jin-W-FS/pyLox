@@ -45,6 +45,17 @@ class Parser(object):
             if not self.consume(TokenType.SEMICOLON):
                 raise self.errUnexpToken(';')
             return Expr.PrintStmt(ast)
+        elif self.consume(TokenType.VAR):
+            name = self.consume(TokenType.IDENTIFIER)
+            if not name:
+                raise self.errUnexpToken('Identifier')
+            if self.consume(TokenType.EQUAL):
+                initial = self.expression()
+            else:
+                initial = None
+            if not self.consume(TokenType.SEMICOLON):
+                raise self.errUnexpToken(';')
+            return Expr.VarStmt(name, initial)
         else:
             ast = self.expression()
             if not self.consume(TokenType.SEMICOLON):

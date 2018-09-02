@@ -60,6 +60,10 @@ class Interpreter(Expr.Visitor):
         TokenType.MINUS         :   [(InterpType.Number, lambda v: -v)],
         TokenType.BANG          :   [(InterpType.Boolean, lambda v: not v)],
     }
+    
+    def __init__(self):
+        super().__init__()
+        self.vars = {}
 
     def visitProgram(self, prog):
         for stmt in prog:
@@ -74,6 +78,12 @@ class Interpreter(Expr.Visitor):
     def visitExprStmt(self, stmt):
         value = self.visit(stmt.expr)
         return value
+
+    def visitVarStmt(self, stmt):
+        name = stmt.name
+        if name.lexeme in self.vars:
+            raise InterpError(name.line, "duplicated declaration of var {}".format(name.lexeme))
+        self.vars[name.lexeme] = self.visit(stmt.initial)
 
     def visitBinaryExpr(self, expr):
         left, right = self.visit(expr.left), self.visit(expr.right)
@@ -105,4 +115,8 @@ class Interpreter(Expr.Visitor):
             return tok.type == TokenType.TRUE
         if tok.type in (TokenType.STRING, TokenType.NUMBER, TokenType.NIL):
             return tok.literal
+        if tok.type == TokenType.IDENTIFIER:
+            if tok.lexeme not in self.vars:
+                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+            return self.vars[tok.lexeme]
         raise InterpError(tok.line, "unsupported literal {}".format(repr(tok)))
