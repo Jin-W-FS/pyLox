@@ -13,9 +13,13 @@ class Lox:
     def run(self, data):
         try:
             tokens = Scanner(data).scanTokens()
-            ast = Parser(tokens).parse()
-            if ast:
-                print(LispPrinter().visit(ast), '=>', stringify(self.interp.visit(ast)))
+            ast, errors = Parser(tokens).parse()
+            if errors:
+                for ex in errors: print(ex)
+                print("skip interpret dure to parser errors")
+                self.hadError = True
+            print(LispPrinter().visit(ast))
+            print(stringify(self.interp.visit(ast)))
         except LoxError as ex:
             print(ex)
             self.hadError = True

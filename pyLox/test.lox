@@ -8,7 +8,7 @@ false; // Not *not* false.
 "";    // The empty string.
 "123"; // This is a string, not a number.
 
-nil
+nil;
 
 add + me;
 subtract - me;

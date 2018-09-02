@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+
 class Visitor:
     def visit(self, obj):
         return obj.accept(self)
@@ -35,8 +36,6 @@ class Literal(namedtuple("Literal", "value")):
 class Unary(namedtuple("Unary", "operator, right")):
     def accept(self, visitor):
         return visitor.visitUnaryExpr(self)
-    def accept(self, visitor):
-        return visitor.visitGroupingExpr(self)
 
 
 # Statements:

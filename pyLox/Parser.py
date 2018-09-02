@@ -7,7 +7,7 @@ class Parser(object):
     def __init__(self, tokens):
         self.tokens = tokens
         self.current = 0
-        
+
     def currToken(self):
         return self.tokens[self.current]
 
@@ -15,8 +15,8 @@ class Parser(object):
         tok = self.currToken()
         return tok.type in args
 
-    def consume(self, type):
-        if self.match(type):
+    def consume(self, *args):
+        if self.match(*args):
             return self.nextToken()
         return None
 
@@ -33,11 +33,21 @@ class Parser(object):
         tok = self.currToken()
         return ParserError(tok.line, "expect {}, got {}".format(exp, tok))
 
-    def parse(self):
-        stmts = []
+    def synchronize(self):
+        'skip until next ';' or EOF when encounter error'
         while not self.isAtEnd():
-            stmts.append(self.statement())
-        return Expr.Program(stmts)
+            if self.nextToken().type == TokenType.SEMICOLON:
+                break
+
+    def parse(self):
+        stmts, errors = Expr.Program(), []
+        while not self.isAtEnd():
+            try:
+                stmts.append(self.statement())
+            except ParserError as ex:
+                errors.append(ex)
+                self.synchronize()
+        return stmts, errors
 
     def statement(self):
         if self.consume(TokenType.PRINT):
@@ -68,7 +78,7 @@ class Parser(object):
     def equality(self):
         ast = self.orexpr()
         while self.match(TokenType.EQUAL_EQUAL, TokenType.BANG_EQUAL):
-            ast = Expr.Binary(ast, self.nextToken(), self.biboolean())
+            ast = Expr.Binary(ast, self.nextToken(), self.orexpr())
         return ast
 
     def orexpr(self):

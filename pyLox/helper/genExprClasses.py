@@ -33,10 +33,10 @@ for k, v in stmts.items():
     print('''
 class {type}Stmt(namedtuple("{type}Stmt", "{fields}")):
     def accept(self, visitor):
-        visitor.visit{type}Stmt(self)'''.format(type=k, fields=v))
+        return visitor.visit{type}Stmt(self)'''.format(type=k, fields=v))
 
 print('''
 class Program(list):
     def accept(self, visitor):
-        visitor.visitProgram(self)
+        return visitor.visitProgram(self)
 ''')

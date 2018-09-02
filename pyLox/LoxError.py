@@ -4,7 +4,10 @@ class LoxError(RuntimeError):
         super().__init__(line, message)
     def __str__(self):
         line, message = self.args
-        return '[line %d] Error: %s' % (line, message)
+        if line is not None:
+            return '[line %d] Error: %s' % (line, message)
+        else:
+            return 'Error: %s' % (message)
 
 class ParserError(LoxError):
     pass
