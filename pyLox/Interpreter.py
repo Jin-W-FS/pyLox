@@ -31,6 +31,7 @@ class InterpType:
         return InterpType.INV
 
 def stringify(v):
+    'parse interpreter value to string as in Lox program'
     if v == None: return 'nil'
     if isinstance(v, str):
         return repr(v)
@@ -38,6 +39,8 @@ def stringify(v):
         s = str(v)
         if s.endswith('.0'): return s[:-2]
         return s
+    if isinstance(v, bool):
+        return str(v).lower()
     return str(v)
 
 class Interpreter(Expr.Visitor):
@@ -55,6 +58,9 @@ class Interpreter(Expr.Visitor):
         TokenType.SLASH         :   [(InterpType.Number, InterpType.Number, lambda l, r: l / r)],
         TokenType.STAR          :   [(InterpType.Number, InterpType.Number, lambda l, r: l * r),
                                      (InterpType.String, InterpType.Number, lambda l, r: l * int(r))],
+        # dealing and/or operator is different: short circuit rules
+        # TokenType.AND           :   [(InterpType.Boolean, InterpType.Boolean, lambda l, r: l and r)],
+        # TokenType.OR            :   [(InterpType.Boolean, InterpType.Boolean, lambda l, r: l or r)],
     }
     UniFns = {
         TokenType.MINUS         :   [(InterpType.Number, lambda v: -v)],
@@ -86,6 +92,8 @@ class Interpreter(Expr.Visitor):
         self.vars[name.lexeme] = self.visit(stmt.initial)
 
     def visitBinaryExpr(self, expr):
+        if expr.operator.type in (TokenType.AND, TokenType.OR):
+            return self._visitAndOrExpr(expr)
         left, right = self.visit(expr.left), self.visit(expr.right)
         for tl, tr, fn in self.BinFns[expr.operator.type]:
             l, r = tl(left), tr(right)
@@ -96,6 +104,16 @@ class Interpreter(Expr.Visitor):
                 raise RunningError(expr.operator.line, str(ex))
         else:
             raise InterpError(expr.operator.line, "invalid operand(s) for operator {}".format(expr.operator))
+
+    def _visitAndOrExpr(self, expr):
+        shortcircuit = (expr.operator.type == TokenType.OR) # or short-circuited by True, and by False
+        for opd in (expr.left, expr.right):
+            v = InterpType.Boolean(self.visit(opd))
+            if v == shortcircuit:
+                return shortcircuit
+            if v == InterpType.INV:
+                raise InterpError(expr.operator.line, "invalid operand(s) for operator {}".format(expr.operator))
+        return not shortcircuit
 
     def visitGroupingExpr(self, expr):
         return self.visit(expr.expression)

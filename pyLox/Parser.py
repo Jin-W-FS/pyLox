@@ -66,8 +66,20 @@ class Parser(object):
         return self.equality()
 
     def equality(self):
-        ast = self.comparison()
+        ast = self.orexpr()
         while self.match(TokenType.EQUAL_EQUAL, TokenType.BANG_EQUAL):
+            ast = Expr.Binary(ast, self.nextToken(), self.biboolean())
+        return ast
+
+    def orexpr(self):
+        ast = self.andexpr()
+        while self.match(TokenType.OR):
+            ast = Expr.Binary(ast, self.nextToken(), self.andexpr())
+        return ast
+
+    def andexpr(self):
+        ast = self.comparison()
+        while self.match(TokenType.AND):
             ast = Expr.Binary(ast, self.nextToken(), self.comparison())
         return ast
 
