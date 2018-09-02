@@ -4,40 +4,42 @@ from Scanner import Scanner
 from AstPrinter import LispPrinter
 from Interpreter import Interpreter, stringify
 
-hadError = False
+class Lox:
 
-def run(data):
-    global hadError
-    try:
-        tokens = Scanner(data).scanTokens()
-        ast = Parser(tokens).parse()
-        if ast:
-            print(LispPrinter().visit(ast), '=>', stringify(Interpreter().visit(ast)))
-    except LoxError as ex:
-        print(ex)
-        hadError = True
+    def __init__(self):
+        self.hadError = False
+        self.interp = Interpreter() # for retain inner statements when runPrompt()
 
-def runFile(path):
-    global hadError
-    data = open(path).read()
-    run(data)
-    if hadError: exit(65)
+    def run(self, data):
+        try:
+            tokens = Scanner(data).scanTokens()
+            ast = Parser(tokens).parse()
+            if ast:
+                print(LispPrinter().visit(ast), '=>', stringify(self.interp.visit(ast)))
+        except LoxError as ex:
+            print(ex)
+            self.hadError = True
 
-def runPrompt():
-    global hadError
-    try:
-        while True:
-            print("> ", end='', flush=True)
-            run(input())
-            hadError = False
-    except EOFError:
-        return
+    def runFile(self, path):
+        data = open(path).read()
+        self.run(data)
+        if self.hadError: exit(65)
+
+    def runPrompt(self):
+        try:
+            while True:
+                print("> ", end='', flush=True)
+                self.run(input())
+                self.hadError = False
+        except EOFError:
+            return
 
 if __name__ == "__main__":
     from sys import argv
+    lox = Lox()
     if len(argv) == 2:
-        runFile(argv[1])
+        lox.runFile(argv[1])
     elif len(argv) == 1:
-        runPrompt()
+        lox.runPrompt()
     else:
         print("usage: %s [script]" % argv[0])
