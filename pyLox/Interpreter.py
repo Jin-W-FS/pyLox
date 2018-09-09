@@ -1,6 +1,7 @@
 import Expr
 from Scanner import *
 from LoxError import *
+from Environment import Environment
 
 class InterpType:
     @staticmethod
@@ -69,9 +70,10 @@ class Interpreter(Expr.Visitor):
     
     def __init__(self):
         super().__init__()
-        self.vars = {}
+        self.env = Environment()
 
     def visitProgram(self, prog):
+        rlt = None
         for stmt in prog:
             rlt = self.visit(stmt)
         return rlt
@@ -87,11 +89,14 @@ class Interpreter(Expr.Visitor):
 
     def visitVarStmt(self, stmt):
         name = stmt.name
-        if name.lexeme in self.vars:
+        if not self.env.define(name.lexeme):
             raise InterpError(name.line, "duplicated declaration of var {}".format(name.lexeme))
-        self.vars[name.lexeme] = self.visit(stmt.initial)
+        if stmt.initial is not None:
+            self.env.assign(name.lexeme, self.visit(stmt.initial))
 
     def visitBinaryExpr(self, expr):
+        if expr.operator.type in (TokenType.EQUAL,):
+            return self._visitAssignExpr(expr)
         if expr.operator.type in (TokenType.AND, TokenType.OR):
             return self._visitAndOrExpr(expr)
         left, right = self.visit(expr.left), self.visit(expr.right)
@@ -104,6 +109,14 @@ class Interpreter(Expr.Visitor):
                 raise RunningError(expr.operator.line, str(ex))
         else:
             raise InterpError(expr.operator.line, "invalid operand(s) for operator {}".format(expr.operator))
+
+    def _visitAssignExpr(self, expr):
+        if not (isinstance(expr.left, Expr.Literal) and expr.left.value.type == TokenType.IDENTIFIER):
+            raise InterpError(expr.operator.line, "left value required before operator {}".format(expr.operator))
+        name = expr.left.value
+        if not self.env.defined(name.lexeme):
+            raise InterpError(name.line, "Identifier {} used but not defined".format(expr.operator))
+        return self.env.assign(name.lexeme, self.visit(expr.right))
 
     def _visitAndOrExpr(self, expr):
         shortcircuit = (expr.operator.type == TokenType.OR) # or short-circuited by True, and by False
@@ -134,7 +147,7 @@ class Interpreter(Expr.Visitor):
         if tok.type in (TokenType.STRING, TokenType.NUMBER, TokenType.NIL):
             return tok.literal
         if tok.type == TokenType.IDENTIFIER:
-            if tok.lexeme not in self.vars:
+            if not self.env.defined(tok.lexeme):
                 raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
-            return self.vars[tok.lexeme]
+            return self.env.value(tok.lexeme)
         raise InterpError(tok.line, "unsupported literal {}".format(repr(tok)))

@@ -50,10 +50,15 @@ class Parser(object):
         return stmts, errors
 
     def statement(self):
+        def checkStmtEnd():
+            cur = self.currToken()
+            if cur.type == TokenType.EOF: return cur
+            if cur.type == TokenType.SEMICOLON: return self.nextToken()
+            raise self.errUnexpToken(';')
+
         if self.consume(TokenType.PRINT):
             ast = self.expression()
-            if not self.consume(TokenType.SEMICOLON):
-                raise self.errUnexpToken(';')
+            checkStmtEnd()
             return Expr.PrintStmt(ast)
         elif self.consume(TokenType.VAR):
             name = self.consume(TokenType.IDENTIFIER)
@@ -63,17 +68,21 @@ class Parser(object):
                 initial = self.expression()
             else:
                 initial = None
-            if not self.consume(TokenType.SEMICOLON):
-                raise self.errUnexpToken(';')
+            checkStmtEnd()
             return Expr.VarStmt(name, initial)
         else:
             ast = self.expression()
-            if not self.consume(TokenType.SEMICOLON):
-                raise self.errUnexpToken(';')
+            checkStmtEnd()
             return Expr.ExprStmt(ast)
 
     def expression(self):
-        return self.equality()
+        return self.assign()
+
+    def assign(self):
+        ast = self.equality()
+        while self.match(TokenType.EQUAL):
+            ast = Expr.Binary(ast, self.nextToken(), self.assign())
+        return ast
 
     def equality(self):
         ast = self.orexpr()
