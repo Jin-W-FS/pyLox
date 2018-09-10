@@ -6,13 +6,17 @@ class Visitor:
         return obj.accept(self)
     def visitProgram(self, prog):
         pass
-    def visitScopeStmt(self, prog):
+    def visitScopeStmt(self, stmt):
         pass
     def visitPrintStmt(self, stmt):
         pass
     def visitExprStmt(self, stmt):
         pass
     def visitVarStmt(self, stmt):
+        pass
+    def visitIfStmt(self, stmt):
+        pass
+    def visitWhileStmt(self, stmt):
         pass
     def visitBinaryExpr(self, expr):
         pass
@@ -53,6 +57,14 @@ class ExprStmt(namedtuple("ExprStmt", "expr")):
 class VarStmt(namedtuple("VarStmt", "name, initial")):
     def accept(self, visitor):
         return visitor.visitVarStmt(self)
+
+class IfStmt(namedtuple("IfStmt", "condition, then_branch, else_branch")):
+    def accept(self, visitor):
+        return visitor.visitIfStmt(self)
+
+class WhileStmt(namedtuple("WhileStmt", "condition, loop")):
+    def accept(self, visitor):
+        return visitor.visitWhileStmt(self)
 
 class ScopeStmt(list):
     def accept(self, visitor):

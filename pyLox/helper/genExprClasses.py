@@ -8,7 +8,9 @@ exprs = {
 stmts = {
     "Print"     : "expr",
     "Expr"      : "expr",
-    "Var"      : "name, initial"
+    "Var"       : "name, initial",
+    "If"        : "condition, then_branch, else_branch",
+    "While"     : "condition, loop",
 }
 
 print("from collections import namedtuple\n\n")
@@ -17,7 +19,7 @@ print('''class Visitor:
         return obj.accept(self)
     def visitProgram(self, prog):
         pass
-    def visitScopeStmt(self, prog):
+    def visitScopeStmt(self, stmt):
         pass''')
 for k in stmts.keys():
     print('''    def visit{type}Stmt(self, stmt):\n        pass'''.format(type=k))

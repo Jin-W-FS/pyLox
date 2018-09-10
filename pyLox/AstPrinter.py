@@ -2,8 +2,11 @@ import Expr
 from Scanner import *
 
 class LispPrinter(Expr.Visitor):
-    def visitScopeStmt(self, prog):
+    def visitProgram(self, prog):
         lst = [self.visit(stmt) for stmt in prog]
+        return '\n'.join(lst)
+    def visitScopeStmt(self, stmt):
+        lst = [self.visit(v) for v in stmt]
         if sum(len(s) for s in lst) < 20:
             return '(prog {})'.format(' '.join(lst))
         else:
@@ -17,6 +20,13 @@ class LispPrinter(Expr.Visitor):
             return '(declvar {})'.format(stmt.name.lexeme)
         else:
             return '(declvar {} {})'.format(stmt.name.lexeme, self.visit(stmt.initial))
+    def visitIfStmt(self, stmt):
+        if stmt.else_branch is None:
+            return '(if {} {})'.format(self.visit(stmt.condition), self.visit(stmt.then_branch))
+        else:
+            return '(if {} {} {})'.format(self.visit(stmt.condition), self.visit(stmt.then_branch), self.visit(stmt.else_branch))
+    def visitWhileStmt(self, stmt):
+        return '(while {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop))
     def visitBinaryExpr(self, expr):
         return '({} {} {})'.format(expr.operator, self.visit(expr.left), self.visit(expr.right))
     def visitGroupingExpr(self, expr):

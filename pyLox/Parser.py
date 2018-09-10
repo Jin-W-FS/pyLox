@@ -50,40 +50,95 @@ class Parser(object):
         return stmts, errors
 
     def statement(self):
-        def checkStmtEnd():
-            cur = self.currToken()
-            if cur.type == TokenType.EOF: return cur
-            if cur.type == TokenType.SEMICOLON: return self.nextToken()
-            raise self.errUnexpToken(';')
+        if self.consume(TokenType.LEFT_BRACE): return self.scopeStmt()
+        if self.consume(TokenType.PRINT): return self.printStmt()
+        if self.consume(TokenType.VAR): return self.varStmt()
+        if self.consume(TokenType.IF): return self.ifStmt()
+        if self.consume(TokenType.SEMICOLON): return self.voidStmt()
+        if self.consume(TokenType.WHILE): return self.whileStmt()
+        if self.consume(TokenType.FOR): return self.forStmt()
+        # else:
+        return self.exprStmt()
+    
+    def scopeStmt(self):
+        stmts = Expr.ScopeStmt()
+        while not self.isAtEnd():
+            if self.consume(TokenType.RIGHT_BRACE): break
+            stmts.append(self.statement())
+        else:   # is at end
+            raise self.errUnexpToken('}')
+        return stmts
 
-        if self.consume(TokenType.LEFT_BRACE):
-            stmts = Expr.ScopeStmt()  # scope statement
-            while not self.isAtEnd():
-                if self.consume(TokenType.RIGHT_BRACE): break
-                stmts.append(self.statement())
-            else:   # is at end
-                raise self.errUnexpToken('}')
-            return stmts
-        elif self.consume(TokenType.PRINT):
-            ast = self.expression()
-            checkStmtEnd()
-            return Expr.PrintStmt(ast)
-        elif self.consume(TokenType.VAR):
-            name = self.consume(TokenType.IDENTIFIER)
-            if not name:
-                raise self.errUnexpToken('Identifier')
-            if self.consume(TokenType.EQUAL):
-                initial = self.expression()
-            else:
-                initial = None
-            checkStmtEnd()
-            return Expr.VarStmt(name, initial)
-        elif self.consume(TokenType.SEMICOLON):
-            pass    # allow null statement
+    def printStmt(self):
+        ast = self.expression()
+        self.endStmt()
+        return Expr.PrintStmt(ast)
+
+    def varStmt(self):
+        name = self.consume(TokenType.IDENTIFIER)
+        if not name:
+            raise self.errUnexpToken('Identifier')
+        if self.consume(TokenType.EQUAL):
+            initial = self.expression()
         else:
-            ast = self.expression()
-            checkStmtEnd()
-            return Expr.ExprStmt(ast)
+            initial = None
+        self.endStmt()
+        return Expr.VarStmt(name, initial)
+
+    def ifStmt(self):
+        if not self.consume(TokenType.LEFT_PAREN):
+            raise self.errUnexpToken('(')
+        condition = self.expression()
+        if not self.consume(TokenType.RIGHT_PAREN):
+            raise self.errUnexpToken(')')
+        then_branch = self.statement()
+        if self.consume(TokenType.ELSE):
+            else_branch = self.statement()
+        else:
+            else_branch = None
+        return Expr.IfStmt(condition, then_branch, else_branch)
+
+    def whileStmt(self):
+        if not self.consume(TokenType.LEFT_PAREN):
+            raise self.errUnexpToken('(')
+        condition = self.expression()
+        if not self.consume(TokenType.RIGHT_PAREN):
+            raise self.errUnexpToken(')')
+        loop = self.statement()
+        return Expr.WhileStmt(condition, loop)
+
+    def forStmt(self):
+        def makeLiteral(type, lexeme):
+            return Expr.Literal(Token(type, lexeme, None, self.currToken().line))
+        if not self.consume(TokenType.LEFT_PAREN):
+            raise self.errUnexpToken('(')
+        initial = self.statement()  # to support varStmt as (var i = 0; ...; ...)
+        condition = self.expression() if not self.match(TokenType.SEMICOLON) else makeLiteral(TokenType.TRUE, 'true')
+        if not self.consume(TokenType.SEMICOLON):
+            raise self.errUnexpToken(';')
+        iteration = self.expression() if not self.match(TokenType.RIGHT_PAREN) else makeLiteral(TokenType.NIL, 'nil')
+        if not self.consume(TokenType.RIGHT_PAREN):
+            raise self.errUnexpToken(')')
+        loop = self.statement()
+        if isinstance(loop, Expr.ScopeStmt):
+            loop.append(iteration)
+        else:
+            loop = Expr.ScopeStmt([loop, iteration])
+        return Expr.ScopeStmt([initial, Expr.WhileStmt(condition, loop)])
+
+    def voidStmt(self):
+        return Expr.Literal(Token(TokenType.NIL, 'nil', None, self.tokens[self.current-1].line))
+
+    def exprStmt(self):
+        ast = self.expression()
+        self.endStmt()
+        return Expr.ExprStmt(ast)
+
+    def endStmt(self):
+        cur = self.currToken()
+        if cur.type == TokenType.EOF: return cur
+        if cur.type == TokenType.SEMICOLON: return self.nextToken()
+        raise self.errUnexpToken(';')
 
     def expression(self):
         return self.assign()

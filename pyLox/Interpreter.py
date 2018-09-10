@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import Expr
 from Scanner import *
 from LoxError import *
@@ -72,6 +73,14 @@ class Interpreter(Expr.Visitor):
         super().__init__()
         self.env = Environment()
 
+    @contextmanager
+    def subEnv(self):
+        self.env = Environment(self.env)
+        try:
+            yield
+        finally:
+            self.env = self.env.parent
+
     def visitProgram(self, prog):
         rlt = None
         for stmt in prog:
@@ -79,16 +88,12 @@ class Interpreter(Expr.Visitor):
         return rlt
 
     def visitScopeStmt(self, stmt):
-        self.env = Environment(self.env)
-        try:
+        with self.subEnv():
             return self.visitProgram(stmt)
-        finally:
-            self.env = self.env.parent
 
     def visitPrintStmt(self, stmt):
         value = self.visit(stmt.expr)
         print(stringify(value))
-        return None
 
     def visitExprStmt(self, stmt):
         value = self.visit(stmt.expr)
@@ -100,6 +105,25 @@ class Interpreter(Expr.Visitor):
             raise InterpError(name.line, "duplicated declaration of var {}".format(name.lexeme))
         if stmt.initial is not None:
             self.env.assign(name.lexeme, self.visit(stmt.initial))
+
+    def visitIfStmt(self, stmt):
+        condition = InterpType.Boolean(self.visit(stmt.condition))
+        if condition == InterpType.INV:
+            raise InterpError(stmt.condition.line, "if statement requires a boolean condition")
+        if condition:
+            return self.visit(stmt.then_branch)
+        else:
+            if stmt.else_branch is not None:
+                return self.visit(stmt.else_branch)
+        return None
+
+    def visitWhileStmt(self, stmt):
+        while True:
+            condition = InterpType.Boolean(self.visit(stmt.condition))
+            if condition == InterpType.INV:
+                raise InterpError(stmt.condition.line, "while statement requires a boolean condition")
+            if not condition: break
+            self.visit(stmt.loop)
 
     def visitBinaryExpr(self, expr):
         if expr.operator.type in (TokenType.EQUAL,):
