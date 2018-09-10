@@ -6,6 +6,8 @@ class Visitor:
         return obj.accept(self)
     def visitProgram(self, prog):
         pass
+    def visitScopeStmt(self, prog):
+        pass
     def visitPrintStmt(self, stmt):
         pass
     def visitExprStmt(self, stmt):
@@ -51,6 +53,10 @@ class ExprStmt(namedtuple("ExprStmt", "expr")):
 class VarStmt(namedtuple("VarStmt", "name, initial")):
     def accept(self, visitor):
         return visitor.visitVarStmt(self)
+
+class ScopeStmt(list):
+    def accept(self, visitor):
+        return visitor.visitScopeStmt(self)
 
 class Program(list):
     def accept(self, visitor):

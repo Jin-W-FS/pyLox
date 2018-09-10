@@ -78,6 +78,13 @@ class Interpreter(Expr.Visitor):
             rlt = self.visit(stmt)
         return rlt
 
+    def visitScopeStmt(self, stmt):
+        self.env = Environment(self.env)
+        try:
+            return self.visitProgram(stmt)
+        finally:
+            self.env = self.env.parent
+
     def visitPrintStmt(self, stmt):
         value = self.visit(stmt.expr)
         print(stringify(value))

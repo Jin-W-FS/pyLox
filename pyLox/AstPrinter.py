@@ -2,7 +2,7 @@ import Expr
 from Scanner import *
 
 class LispPrinter(Expr.Visitor):
-    def visitProgram(self, prog):
+    def visitScopeStmt(self, prog):
         lst = [self.visit(stmt) for stmt in prog]
         if sum(len(s) for s in lst) < 20:
             return '(prog {})'.format(' '.join(lst))

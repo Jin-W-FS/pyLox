@@ -16,6 +16,8 @@ print('''class Visitor:
     def visit(self, obj):
         return obj.accept(self)
     def visitProgram(self, prog):
+        pass
+    def visitScopeStmt(self, prog):
         pass''')
 for k in stmts.keys():
     print('''    def visit{type}Stmt(self, stmt):\n        pass'''.format(type=k))
@@ -36,6 +38,10 @@ class {type}Stmt(namedtuple("{type}Stmt", "{fields}")):
         return visitor.visit{type}Stmt(self)'''.format(type=k, fields=v))
 
 print('''
+class ScopeStmt(list):
+    def accept(self, visitor):
+        return visitor.visitScopeStmt(self)
+
 class Program(list):
     def accept(self, visitor):
         return visitor.visitProgram(self)

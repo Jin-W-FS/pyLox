@@ -56,7 +56,15 @@ class Parser(object):
             if cur.type == TokenType.SEMICOLON: return self.nextToken()
             raise self.errUnexpToken(';')
 
-        if self.consume(TokenType.PRINT):
+        if self.consume(TokenType.LEFT_BRACE):
+            stmts = Expr.ScopeStmt()  # scope statement
+            while not self.isAtEnd():
+                if self.consume(TokenType.RIGHT_BRACE): break
+                stmts.append(self.statement())
+            else:   # is at end
+                raise self.errUnexpToken('}')
+            return stmts
+        elif self.consume(TokenType.PRINT):
             ast = self.expression()
             checkStmtEnd()
             return Expr.PrintStmt(ast)
@@ -70,6 +78,8 @@ class Parser(object):
                 initial = None
             checkStmtEnd()
             return Expr.VarStmt(name, initial)
+        elif self.consume(TokenType.SEMICOLON):
+            pass    # allow null statement
         else:
             ast = self.expression()
             checkStmtEnd()
