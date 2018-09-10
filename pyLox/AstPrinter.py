@@ -26,7 +26,12 @@ class LispPrinter(Expr.Visitor):
         else:
             return '(if {} {} {})'.format(self.visit(stmt.condition), self.visit(stmt.then_branch), self.visit(stmt.else_branch))
     def visitWhileStmt(self, stmt):
-        return '(while {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop))
+        if not stmt.iteration:
+            return '(while {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop))
+        else:
+            return '(while {} {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop), self.visit(stmt.iteration))
+    def visitBreakStmt(self, stmt):
+        return str(stmt.type)
     def visitBinaryExpr(self, expr):
         return '({} {} {})'.format(expr.operator, self.visit(expr.left), self.visit(expr.right))
     def visitGroupingExpr(self, expr):

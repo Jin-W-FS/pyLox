@@ -10,7 +10,8 @@ stmts = {
     "Expr"      : "expr",
     "Var"       : "name, initial",
     "If"        : "condition, then_branch, else_branch",
-    "While"     : "condition, loop",
+    "While"     : "condition, loop, iteration", # support both while and for loop
+    "Break"     : "type", # break, continue, return
 }
 
 print("from collections import namedtuple\n\n")

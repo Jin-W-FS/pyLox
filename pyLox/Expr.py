@@ -18,6 +18,8 @@ class Visitor:
         pass
     def visitWhileStmt(self, stmt):
         pass
+    def visitBreakStmt(self, stmt):
+        pass
     def visitBinaryExpr(self, expr):
         pass
     def visitGroupingExpr(self, expr):
@@ -62,9 +64,13 @@ class IfStmt(namedtuple("IfStmt", "condition, then_branch, else_branch")):
     def accept(self, visitor):
         return visitor.visitIfStmt(self)
 
-class WhileStmt(namedtuple("WhileStmt", "condition, loop")):
+class WhileStmt(namedtuple("WhileStmt", "condition, loop, iteration")):
     def accept(self, visitor):
         return visitor.visitWhileStmt(self)
+
+class BreakStmt(namedtuple("BreakStmt", "type")):
+    def accept(self, visitor):
+        return visitor.visitBreakStmt(self)
 
 class ScopeStmt(list):
     def accept(self, visitor):

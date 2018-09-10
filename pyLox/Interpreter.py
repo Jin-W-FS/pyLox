@@ -119,11 +119,24 @@ class Interpreter(Expr.Visitor):
 
     def visitWhileStmt(self, stmt):
         while True:
-            condition = InterpType.Boolean(self.visit(stmt.condition))
-            if condition == InterpType.INV:
-                raise InterpError(stmt.condition.line, "while statement requires a boolean condition")
-            if not condition: break
-            self.visit(stmt.loop)
+            try:
+                condition = InterpType.Boolean(self.visit(stmt.condition))
+                if condition == InterpType.INV:
+                    raise InterpError(stmt.condition.line, "while statement requires a boolean condition")
+                if not condition: break
+                self.visit(stmt.loop)
+            except LoxFlowCtrl as ex:
+                if ex.type == TokenType.BREAK:
+                    break
+                elif ex.type == TokenType.CONTINUE:
+                    pass    # goto stmt.iteration
+                else:
+                    raise ex
+            if (stmt.iteration):
+                self.visit(stmt.iteration)
+
+    def visitBreakStmt(self, stmt):
+        raise LoxFlowCtrl(stmt.type)
 
     def visitBinaryExpr(self, expr):
         if expr.operator.type in (TokenType.EQUAL,):

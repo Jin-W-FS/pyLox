@@ -57,6 +57,7 @@ class Parser(object):
         if self.consume(TokenType.SEMICOLON): return self.voidStmt()
         if self.consume(TokenType.WHILE): return self.whileStmt()
         if self.consume(TokenType.FOR): return self.forStmt()
+        if self.consume(TokenType.BREAK, TokenType.CONTINUE): return self.breakStmt()
         # else:
         return self.exprStmt()
     
@@ -105,26 +106,28 @@ class Parser(object):
         if not self.consume(TokenType.RIGHT_PAREN):
             raise self.errUnexpToken(')')
         loop = self.statement()
-        return Expr.WhileStmt(condition, loop)
+        return Expr.WhileStmt(condition, loop, None)
 
     def forStmt(self):
-        def makeLiteral(type, lexeme):
-            return Expr.Literal(Token(type, lexeme, None, self.currToken().line))
         if not self.consume(TokenType.LEFT_PAREN):
             raise self.errUnexpToken('(')
         initial = self.statement()  # to support varStmt as (var i = 0; ...; ...)
-        condition = self.expression() if not self.match(TokenType.SEMICOLON) else makeLiteral(TokenType.TRUE, 'true')
+        if not self.match(TokenType.SEMICOLON):
+            condition = self.expression()
+        else:
+            condition = Expr.Literal(Token(type, lexeme, None, self.currToken().line))
         if not self.consume(TokenType.SEMICOLON):
             raise self.errUnexpToken(';')
-        iteration = self.expression() if not self.match(TokenType.RIGHT_PAREN) else makeLiteral(TokenType.NIL, 'nil')
+        iteration = self.expression() if not self.match(TokenType.RIGHT_PAREN) else None
         if not self.consume(TokenType.RIGHT_PAREN):
             raise self.errUnexpToken(')')
         loop = self.statement()
-        if isinstance(loop, Expr.ScopeStmt):
-            loop.append(iteration)
-        else:
-            loop = Expr.ScopeStmt([loop, iteration])
-        return Expr.ScopeStmt([initial, Expr.WhileStmt(condition, loop)])
+        return Expr.ScopeStmt([initial, Expr.WhileStmt(condition, loop, iteration)])
+
+    def breakStmt(self):
+        tok = self.tokens[self.current-1]
+        self.endStmt()
+        return Expr.BreakStmt(tok)
 
     def voidStmt(self):
         return Expr.Literal(Token(TokenType.NIL, 'nil', None, self.tokens[self.current-1].line))
