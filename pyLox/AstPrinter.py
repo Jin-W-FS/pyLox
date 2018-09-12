@@ -40,6 +40,8 @@ class LispPrinter(Expr.Visitor):
         return str(expr.value)
     def visitUnaryExpr(self, expr):
         return '({} {})'.format(expr.operator, self.visit(expr.right))
+    def visitCallExpr(self, expr):
+        return '({})'.format(' '.join([self.visit(expr.callee)] + [self.visit(v) for v in expr.args]))
 
 class RevPolPrinter(Expr.Visitor):
     def visitBinaryExpr(self, expr):

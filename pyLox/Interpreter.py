@@ -45,6 +45,19 @@ def stringify(v):
         return str(v).lower()
     return str(v)
 
+def lox_printf_fn(interp, args):
+    print(*[stringify(v) for v in args])
+
+def lox_typeof_fn(interp, args):
+    if len(args) != 1:
+        raise RunningError(0, "typeof() requires exactly 1 parameter")
+    return str(type(args[0]))
+
+buildin = {
+    'printf' : lox_printf_fn,
+    'typeof' : lox_typeof_fn,
+}
+
 class Interpreter(Expr.Visitor):
     BinFns = {
         TokenType.EQUAL_EQUAL   :   [(InterpType.Any, InterpType.Any, lambda l, r: l == r)],
@@ -71,7 +84,7 @@ class Interpreter(Expr.Visitor):
     
     def __init__(self):
         super().__init__()
-        self.env = Environment()
+        self.env = Environment(initial=buildin)
 
     @contextmanager
     def subEnv(self):
@@ -195,3 +208,8 @@ class Interpreter(Expr.Visitor):
                 raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
             return self.env.value(tok.lexeme)
         raise InterpError(tok.line, "unsupported literal {}".format(repr(tok)))
+
+    def visitCallExpr(self, expr):
+        callee = self.visit(expr.callee)
+        args = [self.visit(v) for v in expr.args]
+        return callee(self, args)

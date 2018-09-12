@@ -2,8 +2,8 @@
 
 class Environment:
     """description of class"""
-    def __init__(self, parent=None):
-        self.vars = {}
+    def __init__(self, parent=None, initial=None):
+        self.vars = initial or {}
         self.parent = parent
 
     def define(self, name):

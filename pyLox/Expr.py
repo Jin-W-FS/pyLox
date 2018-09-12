@@ -28,6 +28,8 @@ class Visitor:
         pass
     def visitUnaryExpr(self, expr):
         pass
+    def visitCallExpr(self, expr):
+        pass
 
 class Binary(namedtuple("Binary", "left, operator, right")):
     def accept(self, visitor):
@@ -44,6 +46,10 @@ class Literal(namedtuple("Literal", "value")):
 class Unary(namedtuple("Unary", "operator, right")):
     def accept(self, visitor):
         return visitor.visitUnaryExpr(self)
+
+class Call(namedtuple("Call", "callee, args")):
+    def accept(self, visitor):
+        return visitor.visitCallExpr(self)
 
 
 # Statements:

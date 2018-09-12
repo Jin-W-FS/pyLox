@@ -3,6 +3,7 @@ exprs = {
     "Grouping"  : "expression",                      
     "Literal"   : "value",                         
     "Unary"     : "operator, right",
+    "Call"      : "callee, args"
 }
 
 stmts = {

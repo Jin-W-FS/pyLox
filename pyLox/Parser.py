@@ -193,7 +193,28 @@ class Parser(object):
         if self.match(TokenType.BANG, TokenType.MINUS):
             return Expr.Unary(self.nextToken(), self.unary())
         else:
-            return self.primary()
+            return self.call()
+
+    def call(self):
+        ast = self.primary()
+        while self.consume(TokenType.LEFT_PAREN):
+            ast = Expr.Call(ast, self.callArgs())
+            if not self.consume(TokenType.RIGHT_PAREN):
+                raise self.errUnexpToken(")")
+        return ast
+
+    def callArgs(self):
+        args = []
+        if not self.match(TokenType.RIGHT_PAREN):
+            while True:
+                args.append(self.expression())
+                if self.match(TokenType.RIGHT_PAREN):
+                    break
+                elif self.consume(TokenType.COMMA):
+                    pass
+                else:
+                    raise self.errUnexpToken(',')
+        return args
 
     def primary(self):
         if self.match(TokenType.NIL, TokenType.NUMBER,
