@@ -13,8 +13,7 @@
     <Name>pyLox</Name>
     <RootNamespace>pyLox</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>
-    </CommandLineArguments>
+    <CommandLineArguments>test.lox</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -33,6 +32,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Expr.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Functions.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="helper\genExprClasses.py">

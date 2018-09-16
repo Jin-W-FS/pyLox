@@ -20,6 +20,9 @@ class LispPrinter(Expr.Visitor):
             return '(declvar {})'.format(stmt.name.lexeme)
         else:
             return '(declvar {} {})'.format(stmt.name.lexeme, self.visit(stmt.initial))
+    def visitFuncStmt(self, stmt):
+        name = 'lambda' if stmt.name is None else 'defun {}'.format(stmt.name.lexeme)
+        return '({} ({})\n  {})'.format(name, ' '.join(tok.lexeme for tok in stmt.params), self.visit(stmt.block))
     def visitIfStmt(self, stmt):
         if stmt.else_branch is None:
             return '(if {} {})'.format(self.visit(stmt.condition), self.visit(stmt.then_branch))
@@ -30,8 +33,11 @@ class LispPrinter(Expr.Visitor):
             return '(while {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop))
         else:
             return '(while {} {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop), self.visit(stmt.iteration))
-    def visitBreakStmt(self, stmt):
-        return str(stmt.type)
+    def visitFlowStmt(self, stmt):
+        if not stmt.value:
+            return str(stmt.type)
+        else:
+            return '({} {})'.format(str(stmt.type), self.visit(stmt.value))
     def visitBinaryExpr(self, expr):
         return '({} {} {})'.format(expr.operator, self.visit(expr.left), self.visit(expr.right))
     def visitGroupingExpr(self, expr):

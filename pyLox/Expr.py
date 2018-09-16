@@ -14,11 +14,13 @@ class Visitor:
         pass
     def visitVarStmt(self, stmt):
         pass
+    def visitFuncStmt(self, stmt):
+        pass
     def visitIfStmt(self, stmt):
         pass
     def visitWhileStmt(self, stmt):
         pass
-    def visitBreakStmt(self, stmt):
+    def visitFlowStmt(self, stmt):
         pass
     def visitBinaryExpr(self, expr):
         pass
@@ -47,7 +49,7 @@ class Unary(namedtuple("Unary", "operator, right")):
     def accept(self, visitor):
         return visitor.visitUnaryExpr(self)
 
-class Call(namedtuple("Call", "callee, args")):
+class Call(namedtuple("Call", "callee, paran, args")):
     def accept(self, visitor):
         return visitor.visitCallExpr(self)
 
@@ -66,6 +68,10 @@ class VarStmt(namedtuple("VarStmt", "name, initial")):
     def accept(self, visitor):
         return visitor.visitVarStmt(self)
 
+class FuncStmt(namedtuple("FuncStmt", "name, params, block")):
+    def accept(self, visitor):
+        return visitor.visitFuncStmt(self)
+
 class IfStmt(namedtuple("IfStmt", "condition, then_branch, else_branch")):
     def accept(self, visitor):
         return visitor.visitIfStmt(self)
@@ -74,9 +80,9 @@ class WhileStmt(namedtuple("WhileStmt", "condition, loop, iteration")):
     def accept(self, visitor):
         return visitor.visitWhileStmt(self)
 
-class BreakStmt(namedtuple("BreakStmt", "type")):
+class FlowStmt(namedtuple("FlowStmt", "type, value")):
     def accept(self, visitor):
-        return visitor.visitBreakStmt(self)
+        return visitor.visitFlowStmt(self)
 
 class ScopeStmt(list):
     def accept(self, visitor):

@@ -2,7 +2,9 @@ from contextlib import contextmanager
 import Expr
 from Scanner import *
 from LoxError import *
+from Functions import *
 from Environment import Environment
+
 
 class InterpType:
     @staticmethod
@@ -32,32 +34,6 @@ class InterpType:
         if isinstance(v, str): return v
         return InterpType.INV
 
-def stringify(v):
-    'parse interpreter value to string as in Lox program'
-    if v == None: return 'nil'
-    if isinstance(v, str):
-        return repr(v)
-    if isinstance(v, float):
-        s = str(v)
-        if s.endswith('.0'): return s[:-2]
-        return s
-    if isinstance(v, bool):
-        return str(v).lower()
-    return str(v)
-
-def lox_printf_fn(interp, args):
-    print(*[stringify(v) for v in args])
-
-def lox_typeof_fn(interp, args):
-    if len(args) != 1:
-        raise RunningError(0, "typeof() requires exactly 1 parameter")
-    return str(type(args[0]))
-
-buildin = {
-    'printf' : lox_printf_fn,
-    'typeof' : lox_typeof_fn,
-}
-
 class Interpreter(Expr.Visitor):
     BinFns = {
         TokenType.EQUAL_EQUAL   :   [(InterpType.Any, InterpType.Any, lambda l, r: l == r)],
@@ -84,11 +60,11 @@ class Interpreter(Expr.Visitor):
     
     def __init__(self):
         super().__init__()
-        self.env = Environment(initial=buildin)
+        self.env = Environment(initial=lox_builtin_functions)
 
     @contextmanager
-    def subEnv(self):
-        self.env = Environment(self.env)
+    def subEnv(self, initial=None):
+        self.env = Environment(self.env, initial)
         try:
             yield
         finally:
@@ -119,6 +95,13 @@ class Interpreter(Expr.Visitor):
         if stmt.initial is not None:
             self.env.assign(name.lexeme, self.visit(stmt.initial))
 
+    def visitFuncStmt(self, stmt):
+        func = LoxFunc(stmt)
+        if stmt.name:
+            self.env.define(stmt.name.lexeme)    # allow function redefine
+            self.env.assign(stmt.name.lexeme, func)
+        return func
+
     def visitIfStmt(self, stmt):
         condition = InterpType.Boolean(self.visit(stmt.condition))
         if condition == InterpType.INV:
@@ -148,8 +131,8 @@ class Interpreter(Expr.Visitor):
             if (stmt.iteration):
                 self.visit(stmt.iteration)
 
-    def visitBreakStmt(self, stmt):
-        raise LoxFlowCtrl(stmt.type)
+    def visitFlowStmt(self, stmt):
+        raise LoxFlowCtrl(stmt.type, stmt.value and self.visit(stmt.value))
 
     def visitBinaryExpr(self, expr):
         if expr.operator.type in (TokenType.EQUAL,):
@@ -211,5 +194,15 @@ class Interpreter(Expr.Visitor):
 
     def visitCallExpr(self, expr):
         callee = self.visit(expr.callee)
+        if not callable(callee):
+            raise InterpError(expr.paran.line, "need a callable object before '(', got {}".format(stringify(callee)))
         args = [self.visit(v) for v in expr.args]
-        return callee(self, args)
+        try:
+            return callee(self, args)
+        except LoxFuncArgc as ex:
+            ex.line = expr.paran.line
+            raise ex
+        except LoxFlowCtrl as ex:
+            if ex.type == TokenType.RETURN:
+                return ex.ret
+            raise ex

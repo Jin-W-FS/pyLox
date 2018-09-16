@@ -3,16 +3,17 @@ exprs = {
     "Grouping"  : "expression",                      
     "Literal"   : "value",                         
     "Unary"     : "operator, right",
-    "Call"      : "callee, args"
+    "Call"      : "callee, paran, args"
 }
 
 stmts = {
     "Print"     : "expr",
     "Expr"      : "expr",
     "Var"       : "name, initial",
+    'Func'      : "name, params, block",
     "If"        : "condition, then_branch, else_branch",
     "While"     : "condition, loop, iteration", # support both while and for loop
-    "Break"     : "type", # break, continue, return
+    "Flow"      : "type, value", # break, continue, return
 }
 
 print("from collections import namedtuple\n\n")

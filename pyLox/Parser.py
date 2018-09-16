@@ -1,6 +1,7 @@
 import Expr
 from Scanner import *
 from LoxError import *
+from Functions import *
 
 class Parser(object):
 
@@ -15,10 +16,16 @@ class Parser(object):
         tok = self.currToken()
         return tok.type in args
 
-    def consume(self, *args):
+    def consume(self, *args, exp=None):
         if self.match(*args):
             return self.nextToken()
-        return None
+        if exp:
+            raise self.errUnexpToken(exp)
+        else:
+            return None
+
+    def lastToken(self):
+        return self.tokens[self.current-1]
 
     def nextToken(self):
         tok = self.currToken()
@@ -34,9 +41,9 @@ class Parser(object):
         return ParserError(tok.line, "expect {}, got {}".format(exp, tok))
 
     def synchronize(self):
-        'skip until next ';' or EOF when encounter error'
+        "skip until next ';' or '}' or EOF when encounter error"
         while not self.isAtEnd():
-            if self.nextToken().type == TokenType.SEMICOLON:
+            if self.nextToken().type in (TokenType.SEMICOLON, TokenType.RIGHT_BRACE):
                 break
 
     def parse(self):
@@ -53,11 +60,12 @@ class Parser(object):
         if self.consume(TokenType.LEFT_BRACE): return self.scopeStmt()
         if self.consume(TokenType.PRINT): return self.printStmt()
         if self.consume(TokenType.VAR): return self.varStmt()
+        if self.consume(TokenType.FUN): return self.funStmt()
         if self.consume(TokenType.IF): return self.ifStmt()
         if self.consume(TokenType.SEMICOLON): return self.voidStmt()
         if self.consume(TokenType.WHILE): return self.whileStmt()
         if self.consume(TokenType.FOR): return self.forStmt()
-        if self.consume(TokenType.BREAK, TokenType.CONTINUE): return self.breakStmt()
+        if self.consume(TokenType.BREAK, TokenType.CONTINUE, TokenType.RETURN): return self.flowStmt()
         # else:
         return self.exprStmt()
     
@@ -76,9 +84,7 @@ class Parser(object):
         return Expr.PrintStmt(ast)
 
     def varStmt(self):
-        name = self.consume(TokenType.IDENTIFIER)
-        if not name:
-            raise self.errUnexpToken('Identifier')
+        name = self.consume(TokenType.IDENTIFIER, exp='Identifier')
         if self.consume(TokenType.EQUAL):
             initial = self.expression()
         else:
@@ -86,12 +92,23 @@ class Parser(object):
         self.endStmt()
         return Expr.VarStmt(name, initial)
 
-    def ifStmt(self):
-        if not self.consume(TokenType.LEFT_PAREN):
-            raise self.errUnexpToken('(')
-        condition = self.expression()
+    def funStmt(self):
+        name = self.consume(TokenType.IDENTIFIER)   # support anonymous functions
+        self.consume(TokenType.LEFT_PAREN, exp='(')
+        params = []
         if not self.consume(TokenType.RIGHT_PAREN):
-            raise self.errUnexpToken(')')
+            while True:
+                params.append(self.consume(TokenType.IDENTIFIER, exp='Identifier'))
+                if self.consume(TokenType.RIGHT_PAREN): break
+                self.consume(TokenType.COMMA, exp=',')
+        self.consume(TokenType.LEFT_BRACE, exp='{')
+        block = self.scopeStmt()
+        return Expr.FuncStmt(name, params, block)
+
+    def ifStmt(self):
+        self.consume(TokenType.LEFT_PAREN, exp='(')
+        condition = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, exp=')')
         then_branch = self.statement()
         if self.consume(TokenType.ELSE):
             else_branch = self.statement()
@@ -100,37 +117,34 @@ class Parser(object):
         return Expr.IfStmt(condition, then_branch, else_branch)
 
     def whileStmt(self):
-        if not self.consume(TokenType.LEFT_PAREN):
-            raise self.errUnexpToken('(')
+        self.consume(TokenType.LEFT_PAREN, exp='(')
         condition = self.expression()
-        if not self.consume(TokenType.RIGHT_PAREN):
-            raise self.errUnexpToken(')')
+        self.consume(TokenType.RIGHT_PAREN, exp=')')
         loop = self.statement()
         return Expr.WhileStmt(condition, loop, None)
 
     def forStmt(self):
-        if not self.consume(TokenType.LEFT_PAREN):
-            raise self.errUnexpToken('(')
+        self.consume(TokenType.LEFT_PAREN, exp='(')
         initial = self.statement()  # to support varStmt as (var i = 0; ...; ...)
         if not self.match(TokenType.SEMICOLON):
             condition = self.expression()
         else:
             condition = Expr.Literal(Token(type, lexeme, None, self.currToken().line))
-        if not self.consume(TokenType.SEMICOLON):
-            raise self.errUnexpToken(';')
+        self.consume(TokenType.SEMICOLON, exp=';')
         iteration = self.expression() if not self.match(TokenType.RIGHT_PAREN) else None
-        if not self.consume(TokenType.RIGHT_PAREN):
-            raise self.errUnexpToken(')')
+        self.consume(TokenType.RIGHT_PAREN, exp=')')
         loop = self.statement()
         return Expr.ScopeStmt([initial, Expr.WhileStmt(condition, loop, iteration)])
 
-    def breakStmt(self):
-        tok = self.tokens[self.current-1]
+    def flowStmt(self):
+        tok, value = self.lastToken(), None
+        if tok.type == TokenType.RETURN and not self.match(TokenType.COMMA):
+            value = self.expression()
         self.endStmt()
-        return Expr.BreakStmt(tok)
+        return Expr.FlowStmt(tok, value)
 
     def voidStmt(self):
-        return Expr.Literal(Token(TokenType.NIL, 'nil', None, self.tokens[self.current-1].line))
+        return Expr.Literal(Token(TokenType.NIL, 'nil', None, self.lastToken().line))
 
     def exprStmt(self):
         ast = self.expression()
@@ -138,10 +152,9 @@ class Parser(object):
         return Expr.ExprStmt(ast)
 
     def endStmt(self):
-        cur = self.currToken()
-        if cur.type == TokenType.EOF: return cur
-        if cur.type == TokenType.SEMICOLON: return self.nextToken()
-        raise self.errUnexpToken(';')
+        tok = self.consume(TokenType.EOF, TokenType.SEMICOLON, exp=';')
+        if tok.type == TokenType.EOF: self.current -= 1 # not consume EOF
+        return tok
 
     def expression(self):
         return self.assign()
@@ -198,9 +211,9 @@ class Parser(object):
     def call(self):
         ast = self.primary()
         while self.consume(TokenType.LEFT_PAREN):
-            ast = Expr.Call(ast, self.callArgs())
-            if not self.consume(TokenType.RIGHT_PAREN):
-                raise self.errUnexpToken(")")
+            paran = self.lastToken()
+            ast = Expr.Call(ast, paran, self.callArgs())
+            self.consume(TokenType.RIGHT_PAREN, exp=')')
         return ast
 
     def callArgs(self):
@@ -208,12 +221,8 @@ class Parser(object):
         if not self.match(TokenType.RIGHT_PAREN):
             while True:
                 args.append(self.expression())
-                if self.match(TokenType.RIGHT_PAREN):
-                    break
-                elif self.consume(TokenType.COMMA):
-                    pass
-                else:
-                    raise self.errUnexpToken(',')
+                if self.match(TokenType.RIGHT_PAREN): break
+                self.consume(TokenType.COMMA, exp=',')
         return args
 
     def primary(self):
@@ -223,8 +232,7 @@ class Parser(object):
             return Expr.Literal(self.nextToken())
         elif self.consume(TokenType.LEFT_PAREN):
             ast = self.expression()
-            if not self.consume(TokenType.RIGHT_PAREN):
-                raise self.errUnexpToken(')')
+            self.consume(TokenType.RIGHT_PAREN, exp=')')
             return Expr.Grouping(ast)
         else:
             raise self.errUnexpToken("primary expr")

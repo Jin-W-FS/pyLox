@@ -10,17 +10,17 @@ false; // Not *not* false.
 
 nil;
 
-add + me;
-subtract - me;
-multiply * me;
-divide / me;
+1 + 2;
+3 - 4;
+5 * 6;
+7 / 8;
 
--negateMe;
+-9;
 
-less < than;
-lessThan <= orEqual;
-greater > than;
-greaterThan >= orEqual;
+1 < 2;
+3 <= 4;
+5 > 6;
+7 >= 8;
 
 1 == 2;         // false.
 "cat" != "dog"; // true.
@@ -38,7 +38,7 @@ true and true;  // true.
 false or false; // false.
 true or false;  // true.
 
-var average = (min + max) / 2;
+var average = (1 + 10) / 2;
 
 {
   print "One statement.";
@@ -53,6 +53,7 @@ print breakfast; // "bagels".
 breakfast = "beignets";
 print breakfast; // "beignets".
 
+var condition = breakfast == "bagels";
 if (condition) {
   print "yes";
 } else {
@@ -68,6 +69,11 @@ while (a < 10) {
 for (var a = 1; a < 10; a = a + 1) {
   print a;
 }
+
+fun average(a, b) {	// override var average
+  return (a + b) / 2;
+}
+printf("average of %f and %f is %f\n", 1, 10, average(1, 10));
 
 fun returnFunction() {
   var outside = "outside";

@@ -6,6 +6,9 @@ class Environment:
         self.vars = initial or {}
         self.parent = parent
 
+    def update(self, dic, **kw):
+        self.vars.update(dic, **kw)
+
     def define(self, name):
         if name in self.vars: return False
         self.vars[name] = None

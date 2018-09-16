@@ -18,7 +18,11 @@ class InterpError(LoxError):
 class RunningError(LoxError):
     pass
 
+class LoxFuncArgc(RunningError):
+    pass
+
 class LoxFlowCtrl(RunningError):
-    def __init__(self, token):
+    def __init__(self, token, ret=None):
         self.type = token.type
+        self.ret = ret
         super().__init__(token.line, 'unexpected {} statement'.format(token.lexeme))
