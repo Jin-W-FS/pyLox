@@ -161,3 +161,14 @@ class Scanner:
 
     def ungetc(self):
         self.current -= 1
+
+    @staticmethod
+    def checkParen(tokens):
+        '''returns: =0: left/right paren match; >0: left > right; <0: left < right(error)'''
+        checking = (TokenType.LEFT_PAREN, TokenType.RIGHT_PAREN, TokenType.LEFT_BRACE, TokenType.RIGHT_BRACE)
+        counter = { k : 0 for k in checking }
+        for tok in tokens:
+            if tok.type in checking:
+                counter[tok.type] += 1
+        return ((counter[TokenType.LEFT_PAREN] - counter[TokenType.RIGHT_PAREN]) or
+                (counter[TokenType.LEFT_BRACE] - counter[TokenType.RIGHT_BRACE]))
