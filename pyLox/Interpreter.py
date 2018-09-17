@@ -63,12 +63,14 @@ class Interpreter(Expr.Visitor):
         self.env = Environment(initial=lox_builtin_functions)
 
     @contextmanager
-    def subEnv(self, initial=None):
-        self.env = Environment(self.env, initial)
+    def subEnv(self, env=None, initial=None):
+        if env is None: env = self.env
+        saved = self.env    # save
+        self.env = Environment(env, initial)    # extend
         try:
-            yield
+            yield   # run user code
         finally:
-            self.env = self.env.parent
+            self.env = saved    # recover
 
     def visitProgram(self, prog):
         rlt = None
@@ -96,7 +98,7 @@ class Interpreter(Expr.Visitor):
             self.env.assign(name.lexeme, self.visit(stmt.initial))
 
     def visitFuncStmt(self, stmt):
-        func = LoxFunc(stmt)
+        func = LoxFunc(stmt, env=self.env)  # lexical scope
         if stmt.name:
             self.env.define(stmt.name.lexeme)    # allow function redefine
             self.env.assign(stmt.name.lexeme, func)

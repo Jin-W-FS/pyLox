@@ -26,7 +26,7 @@ def loxfn_printf(interp, args):
     if len(args) < 1:
         checkArity('printf', '>1', args)    # hack: len(args) != '>1' is always true
     fmt, arg = args[0], tuple(args[1:])
-    print(fmt % arg)
+    print(fmt % arg, end='', flush=True)
 
 def loxfn_typeof(interp, args):
     checkArity('typeof', 1, args)
@@ -52,14 +52,15 @@ lox_builtin_functions = {
 # user defined funtions
 class LoxFunc:
     ANONYMOUS = '<anonymous>'
-    def __init__(self, stmt):
+    def __init__(self, stmt, env=None):
         self.name = stmt.name.lexeme if stmt.name else LoxFunc.ANONYMOUS
         self.params = [ p.lexeme for p in stmt.params ]
         self.block = stmt.block
+        self.env = env
     def __str__(self):
         return '<function {}>'.format(self.name)
     def __call__(self, interp, args):
         checkArity(self.name, len(self.params), args)
         binding = { k : v for k, v in zip(self.params, args) }
-        with interp.subEnv(binding):
+        with interp.subEnv(env=self.env, initial=binding):
             return interp.visitProgram(self.block)
