@@ -1,63 +1,105 @@
+from contextlib import contextmanager
 import Expr
 from Scanner import *
 
 class LispPrinter(Expr.Visitor):
+    def __init__(self, file=None):
+        super().__init__()
+        self.file = file
+        self.indent = 0
+        self.linend = True
+
+    def print(self, string):
+        indent = ' ' * (2 * self.indent * self.linend)
+        print(indent, string, sep='', end='', file=self.file)
+        self.linend = (string[-1] == '\n')  # next print need indent
+
+    def printProgram(self, prog):
+        self.visit(prog)
+        self.print('\n')
+
+    @contextmanager
+    def incIndent(self, n=1):
+        self.indent += n
+        yield
+        self.indent -= n
+
     def visitProgram(self, prog):
-        lst = [self.visit(stmt) for stmt in prog]
-        return '\n'.join(lst)
+        for i, stmt in enumerate(prog):
+            if i != 0: self.print('\n')
+            self.visit(stmt)
     def visitScopeStmt(self, stmt):
-        lst = [self.visit(v) for v in stmt]
-        if sum(len(s) for s in lst) < 20:
-            return '(prog {})'.format(' '.join(lst))
-        else:
-            return '(prog\n  {})'.format('\n  '.join(lst))
+        self.print('(prog\n')
+        with self.incIndent():
+            self.visitProgram(stmt)
+        self.print(')')
     def visitPrintStmt(self, stmt):
-        return '(print {})'.format(self.visit(stmt.expr))
+        self.print('(print ')
+        self.visit(stmt.expr)
+        self.print(')')
     def visitExprStmt(self, stmt):
         return self.visit(stmt.expr)
     def visitVarStmt(self, stmt):
-        if stmt.initial == None:
-            return '(declvar {})'.format(stmt.name.lexeme)
-        else:
-            return '(declvar {} {})'.format(stmt.name.lexeme, self.visit(stmt.initial))
+        self.print('(declvar {}'.format(stmt.name.lexeme))
+        if stmt.initial != None:
+            self.print(' ')
+            self.visit(stmt.initial)
+        self.print(')')
     def visitFuncStmt(self, stmt):
         name = 'lambda' if stmt.name is None else 'defun {}'.format(stmt.name.lexeme)
-        return '({} ({})\n  {})'.format(name, ' '.join(tok.lexeme for tok in stmt.params), self.visit(stmt.block))
+        self.print('({} ({})\n'.format(name, ' '.join(tok.lexeme for tok in stmt.params)))
+        with self.incIndent():
+            self.visitProgram(stmt.block)
+        self.print(')')
     def visitIfStmt(self, stmt):
-        if stmt.else_branch is None:
-            return '(if {} {})'.format(self.visit(stmt.condition), self.visit(stmt.then_branch))
-        else:
-            return '(if {} {} {})'.format(self.visit(stmt.condition), self.visit(stmt.then_branch), self.visit(stmt.else_branch))
+        self.print('(if ')
+        self.visit(stmt.condition)
+        self.print('\n')
+        with self.incIndent():
+            self.visit(stmt.then_branch)
+            if stmt.else_branch:
+                self.print('\n')
+                self.visit(stmt.else_branch)
+        self.print(')')
     def visitWhileStmt(self, stmt):
-        if not stmt.iteration:
-            return '(while {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop))
-        else:
-            return '(while {} {} {})'.format(self.visit(stmt.condition), self.visit(stmt.loop), self.visit(stmt.iteration))
+        self.print('(while ')
+        self.visit(stmt.condition)
+        self.print('\n')
+        with self.incIndent():
+            self.visitProgram(stmt.loop)
+            if stmt.iteration:
+                self.print('\n')
+                self.visit(stmt.iteration)
+        self.print(')')
     def visitFlowStmt(self, stmt):
-        if not stmt.value:
-            return str(stmt.type)
-        else:
-            return '({} {})'.format(str(stmt.type), self.visit(stmt.value))
+        self.print('({}'.format(stmt.type))
+        if stmt.value:
+            self.print(' ')
+            self.visit(stmt.value)
+        self.print(')')
     def visitBinaryExpr(self, expr):
-        return '({} {} {})'.format(expr.operator, self.visit(expr.left), self.visit(expr.right))
+        self.print('({} '.format(expr.operator))
+        self.visit(expr.left)
+        self.print(' ')
+        self.visit(expr.right)
+        self.print(')')
     def visitGroupingExpr(self, expr):
-        return '(group {})'.format(self.visit(expr.expression))
+        self.print('(group ')
+        self.visit(expr.expression)
+        self.print(')')
     def visitLiteralExpr(self, expr):
-        return str(expr.value)
+        self.print(str(expr.value))
     def visitUnaryExpr(self, expr):
-        return '({} {})'.format(expr.operator, self.visit(expr.right))
+        self.print('({} '.format(expr.operator))
+        self.visit(expr.right)
+        self.print(')')
     def visitCallExpr(self, expr):
-        return '({})'.format(' '.join([self.visit(expr.callee)] + [self.visit(v) for v in expr.args]))
-
-class RevPolPrinter(Expr.Visitor):
-    def visitBinaryExpr(self, expr):
-        return '{1} {2} {0}'.format(expr.operator, self.visit(expr.left), self.visit(expr.right))
-    def visitGroupingExpr(self, expr):
-        return '{} group'.format(self.visit(expr.expression))
-    def visitLiteralExpr(self, expr):
-        return str(expr.value)
-    def visitUnaryExpr(self, expr):
-        return '{1} {0}'.format(expr.operator, self.visit(expr.right))
+        self.print('(')
+        self.visit(expr.callee)
+        for v in expr.args:
+            self.print(' ')
+            self.visit(v)
+        self.print(')')
 
 def _test():
     ast = Expr.Binary(

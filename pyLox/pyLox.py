@@ -22,7 +22,7 @@ class Lox:
                 for ex in errors: print(ex)
                 print("skip interpret dure to parser errors")
                 self.hadError = True
-            print(LispPrinter().visit(ast))
+            LispPrinter().printProgram(ast)
             rlt = self.interp.visit(ast)
             if rlt is not None: print(stringify(rlt))
         except LoxError as ex:
