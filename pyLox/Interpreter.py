@@ -172,21 +172,23 @@ class Interpreter(Expr.Visitor):
 
     def _visitGetAttribExpr(self, expr):
         object = self.visit(expr.left)
-        if not isinstance(object, LoxInstance):
-            raise InterpError(expr.operator.line, "left of operator '.' should be an object")
+        getter = getattr(object, 'getattr', None)
+        if not getter:
+            raise InterpError(expr.operator.line, "left of operator '.' should be a gettable object")
         attr = expr.right.value.lexeme
         try:
-            return object.getattr(attr)
+            return getter(attr)
         except KeyError:
             raise InterpError(expr.operator.line, "{} doesn't have attr '{}'".format(object, attr))
 
     def _visitSetAttribExpr(self, expr, valueExpr):
         object = self.visit(expr.left)
-        if not isinstance(object, LoxInstance):
-            raise InterpError(expr.operator.line, "left of operator '.' should be an object")
+        setter = getattr(object, 'setattr', None)
+        if not setter:
+            raise InterpError(expr.operator.line, "left of operator '.' should be a settable object")
         attr = expr.right.value.lexeme
         value = self.visit(valueExpr)
-        object.setattr(attr, value)
+        setter(attr, value)
 
     def _visitAndOrExpr(self, expr):
         shortcircuit = (expr.operator.type == TokenType.OR) # or short-circuited by True, and by False

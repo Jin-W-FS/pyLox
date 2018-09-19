@@ -83,10 +83,10 @@ class LoxClass:
         object = LoxInstance(self)
         object.getattr('init', default=(lambda *args: None))(interp, args)
         return object
-    def lookupMethod(self, name):
+    def getattr(self, name):
         fn = self.methods.get(name)
         if not fn and self.parent:
-            fn = self.parent.lookupMethod(name)
+            fn = self.parent.getattr(name)
         return fn
 
 LoxCls_Object = LoxClass(None, None)
@@ -104,7 +104,7 @@ class LoxInstance:
         # 1) obj.attr
         if name in self.attr: return self.attr[name]
         # 2) cls.method
-        fn = self.cls.lookupMethod(name)
+        fn = self.cls.getattr(name)
         if fn: return LoxMethod(self, fn)
         # 3) default value
         if default != KeyError: return default
