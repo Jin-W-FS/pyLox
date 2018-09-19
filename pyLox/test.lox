@@ -97,7 +97,6 @@ count(3);
 
 print lambda(a, b) { a + b } (5, 7);
 
-/*
 class Breakfast {
   init(meat, bread) {
     this.meat = meat;
@@ -122,12 +121,12 @@ class Brunch < Breakfast {
     super.init(meat, bread);
     this.drink = drink;
   }
-  drink() {
+  askDrink() {
     print "How about a Blood Mary?";
   }
 }
 
-var benedict = Brunch("ham", "English muffin");
+var benedict = Brunch("ham", "toast", "English muffin");
 benedict.serve("Noble Reader");
-
-*/
+benedict.cook();
+benedict.askDrink();

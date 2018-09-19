@@ -60,7 +60,7 @@ class Interpreter(Expr.Visitor):
     
     def __init__(self):
         super().__init__()
-        self.env = Environment(initial=lox_builtin_functions)
+        self.env = Environment(initial=lox_builtins)
 
     @contextmanager
     def subEnv(self, env=None, initial=None):
@@ -99,10 +99,16 @@ class Interpreter(Expr.Visitor):
 
     def visitFuncStmt(self, stmt):
         func = LoxFunc(stmt, env=self.env)  # lexical scope
-        if stmt.name:
-            self.env.define(stmt.name.lexeme)    # allow function redefine
-            self.env.assign(stmt.name.lexeme, func)
+        if func.name != LoxFunc.ANONYMOUS:
+            self.env.define(func.name)    # allow function redefine
+            self.env.assign(func.name, func)
         return func
+
+    def visitClassStmt(self, stmt):
+        cls = LoxClass(stmt, env=self.env)
+        self.env.define(cls.name)
+        self.env.assign(cls.name, cls)
+        return cls
 
     def visitIfStmt(self, stmt):
         condition = InterpType.Boolean(self.visit(stmt.condition))
@@ -137,8 +143,10 @@ class Interpreter(Expr.Visitor):
         raise LoxFlowCtrl(stmt.type, stmt.value and self.visit(stmt.value))
 
     def visitBinaryExpr(self, expr):
-        if expr.operator.type in (TokenType.EQUAL,):
+        if expr.operator.type == TokenType.EQUAL:
             return self._visitAssignExpr(expr)
+        if expr.operator.type == TokenType.DOT:
+            return self._visitGetAttribExpr(expr)
         if expr.operator.type in (TokenType.AND, TokenType.OR):
             return self._visitAndOrExpr(expr)
         left, right = self.visit(expr.left), self.visit(expr.right)
@@ -153,12 +161,32 @@ class Interpreter(Expr.Visitor):
             raise InterpError(expr.operator.line, "invalid operand(s) for operator {}".format(expr.operator))
 
     def _visitAssignExpr(self, expr):
-        if not (isinstance(expr.left, Expr.Literal) and expr.left.value.type == TokenType.IDENTIFIER):
-            raise InterpError(expr.operator.line, "left value required before operator {}".format(expr.operator))
-        name = expr.left.value
-        if not self.env.defined(name.lexeme):
-            raise InterpError(name.line, "Identifier {} used but not defined".format(expr.operator))
-        return self.env.assign(name.lexeme, self.visit(expr.right))
+        if isinstance(expr.left, Expr.Literal) and expr.left.value.type == TokenType.IDENTIFIER:
+            name = expr.left.value
+            if not self.env.defined(name.lexeme):
+                raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
+            return self.env.assign(name.lexeme, self.visit(expr.right))
+        if isinstance(expr.left, Expr.Binary) and expr.left.operator.type == TokenType.DOT:
+            return self._visitSetAttribExpr(expr.left, expr.right)
+        raise InterpError(expr.operator.line, "left value required before operator {}".format(expr.operator))
+
+    def _visitGetAttribExpr(self, expr):
+        object = self.visit(expr.left)
+        if not isinstance(object, LoxInstance):
+            raise InterpError(expr.operator.line, "left of operator '.' should be an object")
+        attr = expr.right.value.lexeme
+        try:
+            return object.getattr(attr)
+        except KeyError:
+            raise InterpError(expr.operator.line, "{} doesn't have attr '{}'".format(object, attr))
+
+    def _visitSetAttribExpr(self, expr, valueExpr):
+        object = self.visit(expr.left)
+        if not isinstance(object, LoxInstance):
+            raise InterpError(expr.operator.line, "left of operator '.' should be an object")
+        attr = expr.right.value.lexeme
+        value = self.visit(valueExpr)
+        object.setattr(attr, value)
 
     def _visitAndOrExpr(self, expr):
         shortcircuit = (expr.operator.type == TokenType.OR) # or short-circuited by True, and by False
@@ -188,9 +216,12 @@ class Interpreter(Expr.Visitor):
             return tok.type == TokenType.TRUE
         if tok.type in (TokenType.STRING, TokenType.NUMBER, TokenType.NIL):
             return tok.literal
-        if tok.type == TokenType.IDENTIFIER:
+        if tok.type in (TokenType.IDENTIFIER, TokenType.THIS, TokenType.SUPER):
             if not self.env.defined(tok.lexeme):
-                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+                if tok.type == TokenType.IDENTIFIER:
+                    raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+                else:
+                    raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
             return self.env.value(tok.lexeme)
         raise InterpError(tok.line, "unsupported literal {}".format(repr(tok)))
 

@@ -51,6 +51,14 @@ class LispPrinter(Expr.Visitor):
         with self.incIndent():
             self.visitProgram(stmt.block)
         self.print(')')
+    def visitClassStmt(self, stmt):
+        if not stmt.parent:
+            self.print('(class {}\n'.format(stmt.name.lexeme))
+        else:
+            self.print('(class {} extends {}\n'.format(stmt.name.lexeme, stmt.parent.lexeme))
+        with self.incIndent():
+            self.visitProgram(stmt.members)
+        self.print(')')
     def visitIfStmt(self, stmt):
         self.print('(if ')
         self.visit(stmt.condition)

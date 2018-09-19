@@ -16,6 +16,8 @@ class Visitor:
         pass
     def visitFuncStmt(self, stmt):
         pass
+    def visitClassStmt(self, stmt):
+        pass
     def visitIfStmt(self, stmt):
         pass
     def visitWhileStmt(self, stmt):
@@ -71,6 +73,10 @@ class VarStmt(namedtuple("VarStmt", "name, initial")):
 class FuncStmt(namedtuple("FuncStmt", "name, params, block")):
     def accept(self, visitor):
         return visitor.visitFuncStmt(self)
+
+class ClassStmt(namedtuple("ClassStmt", "name, parent, members")):
+    def accept(self, visitor):
+        return visitor.visitClassStmt(self)
 
 class IfStmt(namedtuple("IfStmt", "condition, then_branch, else_branch")):
     def accept(self, visitor):

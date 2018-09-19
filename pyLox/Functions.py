@@ -14,7 +14,7 @@ __stringify_fns = {
     type(stringify) : (lambda v: '<buildin {}>'.format(v.__name__.split('loxfn_', 2)[-1])),
     bool        : (lambda v: str(v).lower()),
     float       : (lambda v: str(v).split('.0', 2)[0]),
-    str         : (lambda v: repr(v)),
+    str         : (lambda v: v),
 }
 
 def checkArity(name, n, args):
@@ -43,12 +43,6 @@ def loxfn_clock(interp, args):
     from time import time
     return time()
 
-lox_builtin_functions = {
-    'printf' : loxfn_printf,
-    'typeof' : loxfn_typeof,
-    'clock'  : loxfn_clock,
-}
-
 # user defined funtions
 class LoxFunc:
     ANONYMOUS = '<anonymous>'
@@ -56,11 +50,79 @@ class LoxFunc:
         self.name = stmt.name.lexeme if stmt.name else LoxFunc.ANONYMOUS
         self.params = [ p.lexeme for p in stmt.params ]
         self.block = stmt.block
-        self.env = env
+        self.env = env  # closure
     def __str__(self):
         return '<function {}>'.format(self.name)
-    def __call__(self, interp, args):
+    def __call__(self, interp, args, **kw):
         checkArity(self.name, len(self.params), args)
         binding = { k : v for k, v in zip(self.params, args) }
+        binding.update(kw)
         with interp.subEnv(env=self.env, initial=binding):
             return interp.visitProgram(self.block)
+
+class LoxMethod:
+    def __init__(self, obj, func):
+        self.obj, self.func = obj, func
+    def __str__(self):
+        return '<method {} of {}>'.format(self.func.name, self.obj.cls.name)
+    def __call__(self, interp, args):
+        return self.func(interp, args, this=self.obj, super=self.obj.super())
+
+# user defined classes
+class LoxClass:
+    def __init__(self, stmt, env):
+        if stmt is None:    # super base class: Object
+            self.name, self.parent, self.methods = 'Object', None, {}
+            return
+        self.name = stmt.name.lexeme
+        self.parent = env.value(stmt.parent.lexeme) if stmt.parent else LoxCls_Object
+        self.methods = { func.name.lexeme : LoxFunc(func, env) for func in stmt.members }
+    def __str__(self):
+        return '<class {}>'.format(self.name)
+    def __call__(self, interp, args):
+        object = LoxInstance(self)
+        object.getattr('init', default=(lambda *args: None))(interp, args)
+        return object
+    def lookupMethod(self, name):
+        fn = self.methods.get(name)
+        if not fn and self.parent:
+            fn = self.parent.lookupMethod(name)
+        return fn
+
+LoxCls_Object = LoxClass(None, None)
+
+class LoxInstance:
+    def __init__(self, cls, attr=None):
+        self.cls = cls
+        self.attr = attr if attr is not None else {}
+    def __str__(self):
+        return '<instance of class {}>'.format(self.cls.name)
+    def super(self):
+        'shift self to a super class object'
+        return LoxInstance(self.cls.parent, self.attr)
+    def getattr(self, name, default=KeyError):
+        # 1) obj.attr
+        if name in self.attr: return self.attr[name]
+        # 2) cls.method
+        fn = self.cls.lookupMethod(name)
+        if fn: return LoxMethod(self, fn)
+        # 3) default value
+        if default != KeyError: return default
+        # 4) report error
+        raise KeyError(name)
+    def setattr(self, name, value):
+        self.attr[name] = value
+    def hasattr(self, name):
+        try:
+            self.getattr(name)
+            return True
+        except KeyError:
+            return False
+
+# buildins
+lox_builtins = {
+    'printf' : loxfn_printf,
+    'typeof' : loxfn_typeof,
+    'clock'  : loxfn_clock,
+    'Object' : LoxCls_Object,
+}

@@ -61,6 +61,7 @@ class Parser(object):
         if self.consume(TokenType.PRINT): return self.printStmt()
         if self.consume(TokenType.VAR): return self.varStmt()
         if self.consume(TokenType.FUN): return self.funStmt()
+        if self.consume(TokenType.CLASS): return self.clsStmt()
         if self.consume(TokenType.IF): return self.ifStmt()
         if self.consume(TokenType.SEMICOLON): return self.voidStmt()
         if self.consume(TokenType.WHILE): return self.whileStmt()
@@ -84,7 +85,7 @@ class Parser(object):
         return Expr.PrintStmt(ast)
 
     def varStmt(self):
-        name = self.consume(TokenType.IDENTIFIER, exp='Identifier')
+        name = self.identifier()
         if self.consume(TokenType.EQUAL):
             initial = self.expression()
         else:
@@ -93,7 +94,7 @@ class Parser(object):
         return Expr.VarStmt(name, initial)
 
     def funStmt(self):
-        name = self.consume(TokenType.IDENTIFIER, exp='Identifier')
+        name = self.identifier()
         return self.funExpr(name)
 
     def funExpr(self, name=None):
@@ -101,12 +102,24 @@ class Parser(object):
         params = []
         if not self.consume(TokenType.RIGHT_PAREN):
             while True:
-                params.append(self.consume(TokenType.IDENTIFIER, exp='Identifier'))
+                params.append(self.identifier())
                 if self.consume(TokenType.RIGHT_PAREN): break
                 self.consume(TokenType.COMMA, exp=',')
         self.consume(TokenType.LEFT_BRACE, exp='{')
         block = self.scopeStmt()
         return Expr.FuncStmt(name, params, block)
+
+    def clsStmt(self):
+        name = self.identifier()
+        if self.consume(TokenType.LESS):
+            parent = self.identifier()
+        else:
+            parent = None
+        self.consume(TokenType.LEFT_BRACE, exp='{')
+        members = []
+        while not self.consume(TokenType.RIGHT_BRACE):
+            members.append(self.funStmt())
+        return Expr.ClassStmt(name, parent, members)
 
     def ifStmt(self):
         self.consume(TokenType.LEFT_PAREN, exp='(')
@@ -213,10 +226,13 @@ class Parser(object):
 
     def call(self):
         ast = self.primary()
-        while self.consume(TokenType.LEFT_PAREN):
-            paran = self.lastToken()
-            ast = Expr.Call(ast, paran, self.callArgs())
-            self.consume(TokenType.RIGHT_PAREN, exp=')')
+        while self.match(TokenType.LEFT_PAREN, TokenType.DOT):
+            op = self.nextToken()
+            if op.type == TokenType.LEFT_PAREN:
+                ast = Expr.Call(ast, op, self.callArgs())
+                self.consume(TokenType.RIGHT_PAREN, exp=')')
+            else:   # op.type == TokenType.DOT
+                ast = Expr.Binary(ast, op, Expr.Literal(self.identifier()))
         return ast
 
     def callArgs(self):
@@ -228,10 +244,14 @@ class Parser(object):
                 self.consume(TokenType.COMMA, exp=',')
         return args
 
+    def identifier(self, exp='Identifier'):
+        return self.consume(TokenType.IDENTIFIER, TokenType.THIS, TokenType.SUPER, exp=exp)
+
     def primary(self):
-        if self.match(TokenType.NIL, TokenType.NUMBER,
-                      TokenType.STRING, TokenType.IDENTIFIER,
-                      TokenType.TRUE, TokenType.FALSE):
+        if self.identifier(exp=None):
+            return Expr.Literal(self.lastToken())
+        elif self.match(TokenType.NUMBER, TokenType.STRING,
+                      TokenType.TRUE, TokenType.FALSE, TokenType.NIL):
             return Expr.Literal(self.nextToken())
         elif self.consume(TokenType.LEFT_PAREN):
             ast = self.expression()

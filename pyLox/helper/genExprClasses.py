@@ -11,6 +11,7 @@ stmts = {
     "Expr"      : "expr",
     "Var"       : "name, initial",
     'Func'      : "name, params, block",
+    'Class'     : "name, parent, members",
     "If"        : "condition, then_branch, else_branch",
     "While"     : "condition, loop, iteration", # support both while and for loop
     "Flow"      : "type, value", # break, continue, return
