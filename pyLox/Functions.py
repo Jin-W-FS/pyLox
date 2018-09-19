@@ -70,28 +70,38 @@ class LoxMethod:
         return self.func(interp, args, this=self.obj)
 
 # user defined classes
-class LoxClass:
+class LoxClassBase:
+    def __init__(self):
+        self.name = "Object"
+        self.parent = None
+        self.methods = { 'init' : LoxClassBase.init }
+    @staticmethod
+    def init(interp, args, this, **kw):
+        checkArity('<default constructor of {}>'.format(this.cls), 0, args)
+
+class LoxClass(LoxClassBase):
     def __init__(self, stmt, env):
-        if stmt is None:    # super base class: Object
-            self.name, self.parent, self.methods = 'Object', None, {}
-            return
+        if stmt is None:
+            return super().__init__()
         self.name = stmt.name.lexeme
-        self.parent = env.value(stmt.parent.lexeme) if stmt.parent else LoxCls_Object
+        self.parent = env.value(stmt.parent.lexeme) if stmt.parent else LoxClass.Object
         env = Environment(env, { 'super' : self.parent })
         self.methods = { func.name.lexeme : LoxFunc(func, env) for func in stmt.members }
     def __str__(self):
         return '<class {}>'.format(self.name)
     def __call__(self, interp, args):
         object = LoxInstance(self)
-        object.getattr('init', default=(lambda *args: None))(interp, args)
+        cstr = object.getattr('init')
+        cstr(interp, args)
         return object
-    def getattr(self, name):
+    def getattr(self, name, default=KeyError):
         fn = self.methods.get(name)
         if not fn and self.parent:
-            fn = self.parent.getattr(name)
-        return fn
-
-LoxCls_Object = LoxClass(None, None)
+            fn = self.parent.getattr(name, default)
+        if fn: return fn
+        if default != KeyError: return default
+        raise KeyError(name)
+LoxClass.Object = LoxClass(None, None)
 
 class LoxInstance:
     def __init__(self, cls, attr=None):
@@ -106,7 +116,7 @@ class LoxInstance:
         # 1) obj.attr
         if name in self.attr: return self.attr[name]
         # 2) cls.method
-        fn = self.cls.getattr(name)
+        fn = self.cls.getattr(name, None)
         if fn: return LoxMethod(self, fn)
         # 3) default value
         if default != KeyError: return default
@@ -126,5 +136,5 @@ lox_builtins = {
     'printf' : loxfn_printf,
     'typeof' : loxfn_typeof,
     'clock'  : loxfn_clock,
-    'Object' : LoxCls_Object,
+    'Object' : LoxClass.Object,
 }
