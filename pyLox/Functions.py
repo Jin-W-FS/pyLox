@@ -2,6 +2,7 @@
 '''helpers and buildin functions for Interpreter'''
 
 from LoxError import *
+from Environment import Environment
 
 def stringify(v):
     'parse interpreter value to string as in Lox program'
@@ -66,7 +67,7 @@ class LoxMethod:
     def __str__(self):
         return '<method {} of {}>'.format(self.func.name, self.obj.cls.name)
     def __call__(self, interp, args):
-        return self.func(interp, args, this=self.obj, super=self.obj.super())
+        return self.func(interp, args, this=self.obj)
 
 # user defined classes
 class LoxClass:
@@ -76,6 +77,7 @@ class LoxClass:
             return
         self.name = stmt.name.lexeme
         self.parent = env.value(stmt.parent.lexeme) if stmt.parent else LoxCls_Object
+        env = Environment(env, { 'super' : self.parent })
         self.methods = { func.name.lexeme : LoxFunc(func, env) for func in stmt.members }
     def __str__(self):
         return '<class {}>'.format(self.name)
@@ -97,9 +99,9 @@ class LoxInstance:
         self.attr = attr if attr is not None else {}
     def __str__(self):
         return '<instance of class {}>'.format(self.cls.name)
-    def super(self):
+    def super(self, superClass):
         'shift self to a super class object'
-        return LoxInstance(self.cls.parent, self.attr)
+        return LoxInstance(superClass, self.attr)
     def getattr(self, name, default=KeyError):
         # 1) obj.attr
         if name in self.attr: return self.attr[name]

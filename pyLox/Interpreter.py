@@ -224,6 +224,12 @@ class Interpreter(Expr.Visitor):
                     raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
                 else:
                     raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
+            if tok.type == TokenType.SUPER: # trick here
+                parent = self.env.value('super')
+                if not self.env.defined('this'):    # inside a class method
+                    return parent
+                else:   # inside an instance method
+                    return self.env.value('this').super(parent) # gen super of instance
             return self.env.value(tok.lexeme)
         raise InterpError(tok.line, "unsupported literal {}".format(repr(tok)))
 

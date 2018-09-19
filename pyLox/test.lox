@@ -130,3 +130,19 @@ var benedict = Brunch("ham", "toast", "English muffin");
 benedict.serve("Noble Reader");
 benedict.cook();
 benedict.askDrink();
+
+// test super
+class A {
+  method() { print "A method"; }
+  class_method() { print "A class method"; }
+}
+class B < A {
+  method() { print "B method"; }
+  class_method() { print "B class method"; }
+  test() { super.method(); }
+  test_class_method() { super.class_method(); }
+}
+class C < B {}
+
+C().test();	// "A method"
+C.test_class_method(); // "A class method"
