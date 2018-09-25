@@ -97,6 +97,11 @@ class LispPrinter(Expr.Visitor):
         self.print(')')
     def visitLiteralExpr(self, expr):
         self.print(str(expr.value))
+    def visitIdentifierExpr(self, expr):
+        self.print(expr.value.lexeme)
+    def visitAttribExpr(self, expr):
+        self.visit(expr.object)
+        self.print('.{}'.format(expr.attribute.lexeme))
     def visitUnaryExpr(self, expr):
         self.print('({} '.format(expr.operator))
         self.visit(expr.right)

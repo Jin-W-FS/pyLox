@@ -30,6 +30,10 @@ class Visitor:
         pass
     def visitLiteralExpr(self, expr):
         pass
+    def visitIdentifierExpr(self, expr):
+        pass
+    def visitAttribExpr(self, expr):
+        pass
     def visitUnaryExpr(self, expr):
         pass
     def visitCallExpr(self, expr):
@@ -46,6 +50,14 @@ class Grouping(namedtuple("Grouping", "expression")):
 class Literal(namedtuple("Literal", "value")):
     def accept(self, visitor):
         return visitor.visitLiteralExpr(self)
+
+class Identifier(namedtuple("Identifier", "value")):
+    def accept(self, visitor):
+        return visitor.visitIdentifierExpr(self)
+
+class Attrib(namedtuple("Attrib", "object, dot, attribute")):
+    def accept(self, visitor):
+        return visitor.visitAttribExpr(self)
 
 class Unary(namedtuple("Unary", "operator, right")):
     def accept(self, visitor):

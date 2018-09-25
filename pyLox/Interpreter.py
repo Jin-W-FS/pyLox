@@ -145,8 +145,6 @@ class Interpreter(Expr.Visitor):
     def visitBinaryExpr(self, expr):
         if expr.operator.type == TokenType.EQUAL:
             return self._visitAssignExpr(expr)
-        if expr.operator.type == TokenType.DOT:
-            return self._visitGetAttribExpr(expr)
         if expr.operator.type in (TokenType.AND, TokenType.OR):
             return self._visitAndOrExpr(expr)
         left, right = self.visit(expr.left), self.visit(expr.right)
@@ -160,33 +158,36 @@ class Interpreter(Expr.Visitor):
         else:
             raise InterpError(expr.operator.line, "invalid operand(s) for operator {}".format(expr.operator))
 
+    def visitAttribExpr(self, expr):
+        return self._visitGetAttribExpr(expr)
+
     def _visitAssignExpr(self, expr):
-        if isinstance(expr.left, Expr.Literal) and expr.left.value.type == TokenType.IDENTIFIER:
+        if isinstance(expr.left, Expr.Identifier):
             name = expr.left.value
             if not self.env.defined(name.lexeme):
                 raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
             return self.env.assign(name.lexeme, self.visit(expr.right))
-        if isinstance(expr.left, Expr.Binary) and expr.left.operator.type == TokenType.DOT:
+        if isinstance(expr.left, Expr.Attrib):
             return self._visitSetAttribExpr(expr.left, expr.right)
         raise InterpError(expr.operator.line, "left value required before operator {}".format(expr.operator))
 
     def _visitGetAttribExpr(self, expr):
-        object = self.visit(expr.left)
+        object = self.visit(expr.object)
         getter = getattr(object, 'getattr', None)
         if not getter:
             raise InterpError(expr.operator.line, "left of operator '.' should be a gettable object")
-        attr = expr.right.value.lexeme
+        attr = expr.attribute.lexeme
         try:
             return getter(attr)
         except KeyError:
             raise InterpError(expr.operator.line, "{} doesn't have attr '{}'".format(object, attr))
 
     def _visitSetAttribExpr(self, expr, valueExpr):
-        object = self.visit(expr.left)
+        object = self.visit(expr.object)
         setter = getattr(object, 'setattr', None)
         if not setter:
             raise InterpError(expr.operator.line, "left of operator '.' should be a settable object")
-        attr = expr.right.value.lexeme
+        attr = expr.attribute.lexeme
         value = self.visit(valueExpr)
         setter(attr, value)
 
@@ -218,20 +219,22 @@ class Interpreter(Expr.Visitor):
             return tok.type == TokenType.TRUE
         if tok.type in (TokenType.STRING, TokenType.NUMBER, TokenType.NIL):
             return tok.literal
-        if tok.type in (TokenType.IDENTIFIER, TokenType.THIS, TokenType.SUPER):
-            if not self.env.defined(tok.lexeme):
-                if tok.type == TokenType.IDENTIFIER:
-                    raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
-                else:
-                    raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
-            if tok.type == TokenType.SUPER: # trick here
-                parent = self.env.value('super')
-                if not self.env.defined('this'):    # inside a class method
-                    return parent
-                else:   # inside an instance method
-                    return self.env.value('this').super(parent) # gen super of instance
-            return self.env.value(tok.lexeme)
         raise InterpError(tok.line, "unsupported literal {}".format(repr(tok)))
+
+    def visitIdentifierExpr(self, expr):
+        tok = expr.value
+        if not self.env.defined(tok.lexeme):
+            if tok.type == TokenType.IDENTIFIER:
+                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+            else:
+                raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
+        if tok.type == TokenType.SUPER: # trick here
+            parent = self.env.value('super')
+            if not self.env.defined('this'):    # inside a class method
+                return parent
+            else:   # inside an instance method
+                return self.env.value('this').super(parent) # gen super of instance
+        return self.env.value(tok.lexeme)
 
     def visitCallExpr(self, expr):
         callee = self.visit(expr.callee)

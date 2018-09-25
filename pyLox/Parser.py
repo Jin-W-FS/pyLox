@@ -232,7 +232,7 @@ class Parser(object):
                 ast = Expr.Call(ast, op, self.callArgs())
                 self.consume(TokenType.RIGHT_PAREN, exp=')')
             else:   # op.type == TokenType.DOT
-                ast = Expr.Binary(ast, op, Expr.Literal(self.identifier()))
+                ast = Expr.Attrib(ast, op, self.identifier())
         return ast
 
     def callArgs(self):
@@ -249,7 +249,7 @@ class Parser(object):
 
     def primary(self):
         if self.identifier(exp=None):
-            return Expr.Literal(self.lastToken())
+            return Expr.Identifier(self.lastToken())
         elif self.match(TokenType.NUMBER, TokenType.STRING,
                       TokenType.TRUE, TokenType.FALSE, TokenType.NIL):
             return Expr.Literal(self.nextToken())

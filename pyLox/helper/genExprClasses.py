@@ -1,7 +1,9 @@
 exprs = {
     "Binary"    : "left, operator, right",
-    "Grouping"  : "expression",                      
-    "Literal"   : "value",                         
+    "Grouping"  : "expression",
+    "Literal"   : "value",
+    "Identifier": "value",
+    "Attrib"    : "object, dot, attribute",
     "Unary"     : "operator, right",
     "Call"      : "callee, paran, args"
 }
