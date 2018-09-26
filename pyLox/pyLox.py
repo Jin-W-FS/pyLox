@@ -19,15 +19,15 @@ class Lox:
             if prompt:
                 tokens = self.continueLines(tokens)
                 if not tokens: return
+
             ast, errors = Parser(tokens).parse()
-            if errors:
-                for ex in errors: print(ex)
-                print("skip interpret dure to parser errors")
-                self.hadError = True
+            if errors: return self.alarmErrors('parser', errors)
+
             LispPrinter().printProgram(ast)
-            ids = self.resolver.resolve(ast)
-            for tok, order in sorted(ids.items(), key=(lambda tp: tp[0].line * 1024 + tp[0].char)):
-                print("resolve {} @ ({},{}) up {}".format(repr(tok), tok.line, tok.char, order))
+
+            ids, errors = self.resolver.resolve(ast)
+            if errors: return self.alarmErrors('resolver', errors)
+
             rlt = self.interp.interpret(ast, ids=ids)
             if rlt is not None: print(stringify(rlt))
         except LoxError as ex:
@@ -62,6 +62,11 @@ class Lox:
             tokens = self.tokens
             self.tokens = []
         return tokens
+
+    def alarmErrors(self, title, errors):
+        for ex in errors: print(ex)
+        print("stop interpret dure to", title, "errors")
+        self.hadError = True
 
 
 if __name__ == "__main__":

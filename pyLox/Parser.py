@@ -98,6 +98,8 @@ class Parser(object):
         return self.funExpr(name)
 
     def funExpr(self, name=None):
+        if self.consume(TokenType.SEMICOLON): # early declaration
+            return Expr.FuncStmt(name, [], [])
         self.consume(TokenType.LEFT_PAREN, exp='(')
         params = []
         if not self.consume(TokenType.RIGHT_PAREN):
@@ -111,6 +113,8 @@ class Parser(object):
 
     def clsStmt(self):
         name = self.identifier()
+        if self.consume(TokenType.SEMICOLON):
+            return Expr.ClassStmt(name, None, [])
         if self.consume(TokenType.LESS):
             parent = self.identifier()
         else:
@@ -154,7 +158,7 @@ class Parser(object):
 
     def flowStmt(self):
         tok, value = self.lastToken(), None
-        if tok.type == TokenType.RETURN and not self.match(TokenType.COMMA):
+        if tok.type == TokenType.RETURN and not self.match(TokenType.SEMICOLON):
             value = self.expression()
         self.endStmt()
         return Expr.FlowStmt(tok, value)

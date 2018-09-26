@@ -156,8 +156,8 @@ class Interpreter(Expr.Visitor):
         return func
 
     def visitClassStmt(self, stmt):
-        cls = LoxClass(stmt, env=self.env)
-        self.env.define(cls.name)
+        self.env.define(stmt.name.lexeme)
+        cls = LoxClass(stmt, env=self.env, lookup=self.getval)
         self.env.assign(cls.name, cls, depth=0)
         return cls
 

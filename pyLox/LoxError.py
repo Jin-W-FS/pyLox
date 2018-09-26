@@ -15,7 +15,7 @@ class ParserError(LoxError):
 class InterpError(LoxError):
     pass
 
-class ResolverError(LoxError):
+class ResolveError(LoxError):
     pass
 
 class RunningError(LoxError):

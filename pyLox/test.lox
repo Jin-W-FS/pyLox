@@ -75,6 +75,17 @@ fun average(a, b) {	// override var average
 }
 printf("average of %f and %f is %f\n", 1, 10, average(1, 10));
 
+fun odd; // early declaration
+fun even(i) {
+  if (i < 0) return even(-i);
+  if (i == 0) return true;
+  return odd(i - 1);
+}
+fun odd(i) {
+  return even(i - 1);
+}
+print even(10);
+
 fun counter(i) {
 	fun count() {
 		i = i + 1;
@@ -109,7 +120,6 @@ class Breakfast {
     print "Enjoy your " + this.meat + " and " +
         this.bread + ", " + who + ".";
   }
-
 }
 
 var baconAndToast = Breakfast("bacon", "toast");
@@ -146,3 +156,6 @@ class C < B {}
 
 C().test();	// "A method"
 C.test_class_method(); // "A class method"
+
+// var ResolveVarError = ResolveVarError; // should resolve to en error
+// class ResolveClsError < ResolveClsError { }  // should resolve to en error

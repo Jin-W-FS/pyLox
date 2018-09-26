@@ -80,11 +80,12 @@ class LoxClassBase:
         checkArity('<default constructor of {}>'.format(this.cls), 0, args)
 
 class LoxClass(LoxClassBase):
-    def __init__(self, stmt, env):
+    def __init__(self, stmt, env, lookup=None):
         if stmt is None:
             return super().__init__()
         self.name = stmt.name.lexeme
-        self.parent = env.value(stmt.parent.lexeme) if stmt.parent else LoxClass.Object
+        if lookup is None: lookup = (lambda name:  env.value(name.lexeme))
+        self.parent = lookup(stmt.parent) if stmt.parent else LoxClass.Object
         env = Environment(env, { 'super' : self.parent })
         self.methods = { func.name.lexeme : LoxFunc(func, env) for func in stmt.members }
     def __str__(self):
