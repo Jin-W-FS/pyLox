@@ -26,7 +26,7 @@ TokenType.Keys = (
     )
 TokenType.KeyMap = { k : TokenType(i) for i, k in enumerate(TokenType.Keys) }
 
-class Token(namedtuple("Token", "type,lexeme,literal,line")):
+class Token(namedtuple("Token", "type,lexeme,literal,line,char")):
     def __repr__(self):
         return '<{}: {}>'.format(self.type.name, str(self))
     def __str__(self):
@@ -40,14 +40,14 @@ class Scanner:
     def __init__(self, source):
         self.source = source
         self.start = self.current = 0
-        self.line = 1
+        self.line, self.linebeg = 1, -1
         self.tokens = []
 
     def curToken(self):
         return self.source[self.start:self.current]
 
     def addToken(self, type, literal=None):
-        self.tokens.append(Token(type, self.curToken(), literal, self.line))
+        self.tokens.append(Token(type, self.curToken(), literal, self.line, self.start - self.linebeg))
 
     def scanTokens(self):
         while not self.isAtEnd():
@@ -155,7 +155,9 @@ class Scanner:
 
     def advance(self):
         c = self.source[self.current]
-        if c == '\n': self.line += 1
+        if c == '\n':
+            self.line += 1
+            self.linebeg = self.current
         self.current += 1
         return c
 

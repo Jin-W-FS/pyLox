@@ -50,6 +50,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="pyLox.py" />
+    <Compile Include="Resolver.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Scanner.py">
       <SubType>Code</SubType>
     </Compile>

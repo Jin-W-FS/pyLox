@@ -3,6 +3,7 @@ import Expr
 from Scanner import *
 from LoxError import *
 from Functions import *
+from Resolver import Resolver
 from Environment import Environment
 
 
@@ -60,7 +61,16 @@ class Interpreter(Expr.Visitor):
     
     def __init__(self):
         super().__init__()
-        self.env = Environment(initial=lox_builtins)
+        self.env = self.globalEnv = Environment(initial=lox_builtins)
+        self.ids = None
+
+    def interpret(self, ast, ids=None):
+        self.ids = ids
+        if self.ids is None:
+            self.getval, self.setval = self.getval0, self.setval0
+        else:
+            self.getval, self.setval = self.getval1, self.setval1
+        self.visit(ast)
 
     @contextmanager
     def subEnv(self, env=None, initial=None):
@@ -71,6 +81,47 @@ class Interpreter(Expr.Visitor):
             yield   # run user code
         finally:
             self.env = saved    # recover
+
+    def setval0(self, name, valueExpr):
+        env = self.env
+        if not env.defined(name.lexeme):
+            raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
+        return env.assign(name.lexeme, self.visit(valueExpr))
+
+    def getval0(self, name):
+        env = self.env
+        if not env.defined(name.lexeme):
+            if name.type == TokenType.IDENTIFIER:
+                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+            else:
+                raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
+        if name.type == TokenType.SUPER: # trick here
+            parent = env.value('super')    # super class
+            if not env.defined('this'): return parent    # class method
+            return env.value('this').super(parent)
+        return env.value(name.lexeme)
+
+    def setval1(self, name, valueExpr):
+        depth = None if self.ids is None else self.ids[name]
+        env = self.globalEnv if depth == -1 else self.env
+        if not env.defined(name.lexeme, depth=depth):
+            raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
+        return env.assign(name.lexeme, self.visit(valueExpr), depth=depth)
+
+    def getval1(self, name):
+        depth = None if self.ids is None else self.ids[name]
+        env = self.globalEnv if depth == -1 else self.env
+        if not env.defined(name.lexeme, depth=depth):
+            if name.type == TokenType.IDENTIFIER:
+                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+            else:
+                raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
+        if name.type == TokenType.SUPER: # trick here
+            parent = env.value('super', depth=depth)    # super class
+            updepth = None if self.ids is None else (depth - 1)
+            if not env.defined('this', depth=updepth): return parent    # class method
+            return env.value('this', depth=updepth).super(parent)
+        return env.value(name.lexeme, depth=depth)
 
     def visitProgram(self, prog):
         rlt = None
@@ -95,19 +146,19 @@ class Interpreter(Expr.Visitor):
         if not self.env.define(name.lexeme):
             raise InterpError(name.line, "duplicated declaration of var {}".format(name.lexeme))
         if stmt.initial is not None:
-            self.env.assign(name.lexeme, self.visit(stmt.initial))
+            self.env.assign(name.lexeme, self.visit(stmt.initial), depth=0)
 
     def visitFuncStmt(self, stmt):
         func = LoxFunc(stmt, env=self.env)  # lexical scope
         if func.name != LoxFunc.ANONYMOUS:
             self.env.define(func.name)    # allow function redefine
-            self.env.assign(func.name, func)
+            self.env.assign(func.name, func, depth=0)
         return func
 
     def visitClassStmt(self, stmt):
         cls = LoxClass(stmt, env=self.env)
         self.env.define(cls.name)
-        self.env.assign(cls.name, cls)
+        self.env.assign(cls.name, cls, depth=0)
         return cls
 
     def visitIfStmt(self, stmt):
@@ -117,9 +168,8 @@ class Interpreter(Expr.Visitor):
         if condition:
             return self.visit(stmt.then_branch)
         else:
-            if stmt.else_branch is not None:
-                return self.visit(stmt.else_branch)
-        return None
+            if not stmt.else_branch: return None
+            return self.visit(stmt.else_branch)
 
     def visitWhileStmt(self, stmt):
         while True:
@@ -136,7 +186,7 @@ class Interpreter(Expr.Visitor):
                     pass    # goto stmt.iteration
                 else:
                     raise ex
-            if (stmt.iteration):
+            if stmt.iteration:
                 self.visit(stmt.iteration)
 
     def visitFlowStmt(self, stmt):
@@ -164,9 +214,7 @@ class Interpreter(Expr.Visitor):
     def _visitAssignExpr(self, expr):
         if isinstance(expr.left, Expr.Identifier):
             name = expr.left.value
-            if not self.env.defined(name.lexeme):
-                raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
-            return self.env.assign(name.lexeme, self.visit(expr.right))
+            return self.setval(name, expr.right)
         if isinstance(expr.left, Expr.Attrib):
             return self._visitSetAttribExpr(expr.left, expr.right)
         raise InterpError(expr.operator.line, "left value required before operator {}".format(expr.operator))
@@ -222,19 +270,7 @@ class Interpreter(Expr.Visitor):
         raise InterpError(tok.line, "unsupported literal {}".format(repr(tok)))
 
     def visitIdentifierExpr(self, expr):
-        tok = expr.value
-        if not self.env.defined(tok.lexeme):
-            if tok.type == TokenType.IDENTIFIER:
-                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
-            else:
-                raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
-        if tok.type == TokenType.SUPER: # trick here
-            parent = self.env.value('super')
-            if not self.env.defined('this'):    # inside a class method
-                return parent
-            else:   # inside an instance method
-                return self.env.value('this').super(parent) # gen super of instance
-        return self.env.value(tok.lexeme)
+        return self.getval(expr.value)
 
     def visitCallExpr(self, expr):
         callee = self.visit(expr.callee)

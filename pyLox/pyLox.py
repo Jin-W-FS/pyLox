@@ -2,6 +2,7 @@ from LoxError import *
 from Parser import Parser
 from Scanner import Scanner
 from AstPrinter import LispPrinter
+from Resolver import Resolver
 from Interpreter import Interpreter, stringify
 
 class Lox:
@@ -10,6 +11,7 @@ class Lox:
         self.hadError = False
         self.tokens = []            # saved tokens from previous uncompleted lines
         self.interp = Interpreter() # for retain inner statements when runPrompt()
+        self.resolver = Resolver()
 
     def run(self, data, prompt=False):
         try:
@@ -23,7 +25,10 @@ class Lox:
                 print("skip interpret dure to parser errors")
                 self.hadError = True
             LispPrinter().printProgram(ast)
-            rlt = self.interp.visit(ast)
+            ids = self.resolver.resolve(ast)
+            for tok, order in sorted(ids.items(), key=(lambda tp: tp[0].line * 1024 + tp[0].char)):
+                print("resolve {} @ ({},{}) up {}".format(repr(tok), tok.line, tok.char, order))
+            rlt = self.interp.interpret(ast, ids=ids)
             if rlt is not None: print(stringify(rlt))
         except LoxError as ex:
             print(ex)
