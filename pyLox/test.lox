@@ -1,5 +1,5 @@
-true;  // Not false.
-false; // Not *not* false.
+assert true;  // Not false.
+assert !false; // Not *not* false.
 
 1234;  // An integer.
 12.34; // A decimal number.
@@ -10,35 +10,28 @@ false; // Not *not* false.
 
 nil;
 
-1 + 2;
-3 - 4;
-5 * 6;
-7 / 8;
+assert 1 + 2 == 3;
+assert 3 - 4 == -1;
+assert 5 * 6 == 30;
+assert 7 / 8 == 0.875;
 
--9;
+assert 1 < 2;
+assert 3 <= 4;
+assert !(5 > 6);
+assert !(7 >= 8);
 
-1 < 2;
-3 <= 4;
-5 > 6;
-7 >= 8;
+assert !(1 == 2);
+assert "cat" != "dog";
+assert !(314 == "pi");
+assert (123 != "123");
 
-1 == 2;         // false.
-"cat" != "dog"; // true.
-
-314 == "pi"; // false.
-
-123 == "123"; // false.
-
-!true;  // false.
-!false; // true.
-
-true and false; // false.
-true and true;  // true.
-
-false or false; // false.
-true or false;  // true.
+assert !(true and false);
+assert (true and true);
+assert !(false or false);
+assert (true or false);
 
 var average = (1 + 10) / 2;
+assert average == 5.5;
 
 {
   print "One statement.";

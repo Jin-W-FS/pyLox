@@ -70,7 +70,7 @@ class Interpreter(Expr.Visitor):
             self.getval, self.setval = self.getval0, self.setval0
         else:
             self.getval, self.setval = self.getval1, self.setval1
-        self.visit(ast)
+        return self.visit(ast)
 
     @contextmanager
     def subEnv(self, env=None, initial=None):
@@ -92,9 +92,9 @@ class Interpreter(Expr.Visitor):
         env = self.env
         if not env.defined(name.lexeme):
             if name.type == TokenType.IDENTIFIER:
-                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+                raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
             else:
-                raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
+                raise InterpError(name.line, "keyword '{}' should be used inside a class".format(name.lexeme))
         if name.type == TokenType.SUPER: # trick here
             parent = env.value('super')    # super class
             if not env.defined('this'): return parent    # class method
@@ -113,9 +113,9 @@ class Interpreter(Expr.Visitor):
         env = self.globalEnv if depth == -1 else self.env
         if not env.defined(name.lexeme, depth=depth):
             if name.type == TokenType.IDENTIFIER:
-                raise InterpError(tok.line, "var {} used without being declared".format(tok.lexeme))
+                raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
             else:
-                raise InterpError(tok.line, "keyword '{}' should be used inside a class".format(tok.lexeme))
+                raise InterpError(name.line, "keyword '{}' should be used inside a class".format(name.lexeme))
         if name.type == TokenType.SUPER: # trick here
             parent = env.value('super', depth=depth)    # super class
             updepth = None if self.ids is None else (depth - 1)
@@ -137,9 +137,19 @@ class Interpreter(Expr.Visitor):
         value = self.visit(stmt.expr)
         print(stringify(value))
 
+    def visitAssertStmt(self, stmt):
+        value = InterpType.Boolean(self.visit(stmt.expr))
+        if value == InterpType.INV:
+            raise InterpError(stmt.op.line, "assert statement requires a boolean condition")
+        if not value:
+            from io import StringIO
+            from AstPrinter import LispPrinter
+            sp = LispPrinter(file=StringIO()).printProgram(stmt.expr, end='').getvalue()
+            raise AssertError(stmt.op.line, "assertion {} failed".format(sp))
+
     def visitExprStmt(self, stmt):
         value = self.visit(stmt.expr)
-        return value
+        return None if stmt.semicolon else value
 
     def visitVarStmt(self, stmt):
         name = stmt.name

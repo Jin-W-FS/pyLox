@@ -21,6 +21,9 @@ class ResolveError(LoxError):
 class RunningError(LoxError):
     pass
 
+class AssertError(RunningError):
+    pass
+
 class LoxFuncArgc(RunningError):
     pass
 

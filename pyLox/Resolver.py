@@ -108,6 +108,9 @@ class Resolver(Expr.Visitor):
     def visitPrintStmt(self, stmt):
         self.visit(stmt.expr)
 
+    def visitAssertStmt(self, stmt):
+        self.visit(stmt.expr)
+
     def visitExprStmt(self, stmt):
         self.visit(stmt.expr)
 

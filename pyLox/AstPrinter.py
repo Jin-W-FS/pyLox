@@ -14,9 +14,10 @@ class LispPrinter(Expr.Visitor):
         print(indent, string, sep='', end='', file=self.file)
         self.linend = (string[-1] == '\n')  # next print need indent
 
-    def printProgram(self, prog):
+    def printProgram(self, prog, end='\n'):
         self.visit(prog)
-        self.print('\n')
+        if end: self.print(end)
+        return self.file
 
     @contextmanager
     def incIndent(self, n=1):
@@ -35,6 +36,10 @@ class LispPrinter(Expr.Visitor):
         self.print(')')
     def visitPrintStmt(self, stmt):
         self.print('(print ')
+        self.visit(stmt.expr)
+        self.print(')')
+    def visitAssertStmt(self, stmt):
+        self.print('(assert ')
         self.visit(stmt.expr)
         self.print(')')
     def visitExprStmt(self, stmt):

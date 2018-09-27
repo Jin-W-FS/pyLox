@@ -10,6 +10,8 @@ class Visitor:
         pass
     def visitPrintStmt(self, stmt):
         pass
+    def visitAssertStmt(self, stmt):
+        pass
     def visitExprStmt(self, stmt):
         pass
     def visitVarStmt(self, stmt):
@@ -74,7 +76,11 @@ class PrintStmt(namedtuple("PrintStmt", "expr")):
     def accept(self, visitor):
         return visitor.visitPrintStmt(self)
 
-class ExprStmt(namedtuple("ExprStmt", "expr")):
+class AssertStmt(namedtuple("AssertStmt", "op, expr")):
+    def accept(self, visitor):
+        return visitor.visitAssertStmt(self)
+
+class ExprStmt(namedtuple("ExprStmt", "expr, semicolon")):
     def accept(self, visitor):
         return visitor.visitExprStmt(self)
 

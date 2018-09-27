@@ -59,6 +59,7 @@ class Parser(object):
     def statement(self):
         if self.consume(TokenType.LEFT_BRACE): return self.scopeStmt()
         if self.consume(TokenType.PRINT): return self.printStmt()
+        if self.consume(TokenType.ASSERT): return self.assertStmt()
         if self.consume(TokenType.VAR): return self.varStmt()
         if self.consume(TokenType.FUN): return self.funStmt()
         if self.consume(TokenType.CLASS): return self.clsStmt()
@@ -83,6 +84,12 @@ class Parser(object):
         ast = self.expression()
         self.endStmt()
         return Expr.PrintStmt(ast)
+
+    def assertStmt(self):
+        op = self.lastToken()
+        ast = self.expression()
+        self.endStmt()
+        return Expr.AssertStmt(op, ast)
 
     def varStmt(self):
         name = self.identifier()
@@ -149,7 +156,7 @@ class Parser(object):
         if not self.match(TokenType.SEMICOLON):
             condition = self.expression()
         else:
-            condition = Expr.Literal(Token(type, lexeme, None, self.currToken().line))
+            condition = Expr.Literal(self.currToken()._replace(type=TokenType.TRUE, lexeme='true', literal=None))
         self.consume(TokenType.SEMICOLON, exp=';')
         iteration = self.expression() if not self.match(TokenType.RIGHT_PAREN) else None
         self.consume(TokenType.RIGHT_PAREN, exp=')')
@@ -164,17 +171,18 @@ class Parser(object):
         return Expr.FlowStmt(tok, value)
 
     def voidStmt(self):
-        return Expr.Literal(Token(TokenType.NIL, 'nil', None, self.lastToken().line))
+        return Expr.Literal(self.lastToken()._replace(type=TokenType.NIL, lexeme='nil', literal=None))
 
     def exprStmt(self):
         ast = self.expression()
-        self.endStmt()
-        return Expr.ExprStmt(ast)
+        terminated = self.endStmt()
+        return Expr.ExprStmt(ast, terminated)
 
     def endStmt(self):
-        if self.match(TokenType.EOF, TokenType.RIGHT_BRACE): return True
-        if self.consume(TokenType.SEMICOLON, exp=';'): return True
-        return False
+        if self.match(TokenType.EOF, TokenType.RIGHT_BRACE): return False
+        # else:
+        self.consume(TokenType.SEMICOLON, exp=';')
+        return True
 
     def expression(self):
         return self.assign()

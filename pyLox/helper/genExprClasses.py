@@ -10,7 +10,8 @@ exprs = {
 
 stmts = {
     "Print"     : "expr",
-    "Expr"      : "expr",
+    "Assert"    : "op, expr",
+    "Expr"      : "expr, semicolon",
     "Var"       : "name, initial",
     'Func'      : "name, params, block",
     'Class'     : "name, parent, members",
