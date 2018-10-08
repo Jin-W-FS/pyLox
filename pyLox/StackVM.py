@@ -1,20 +1,21 @@
 
 class StackVM:
     # operators
-    NOP, JMPTO, JMP, JMPIF,                         \
+    NOP, JMPTO, JMP, JZ, JNZ,                       \
     LOAD, SAVE, INST, DUP, POP,                     \
     NOT, NEGATIVE,                                  \
     PLUS, MINUS, MULTIPLY, DIVIDE,                  \
     EQUAL, NOT_EQUAL,                               \
     GREATER, GREATER_EQUAL, LESS, LESS_EQUAL,       \
     PRINT, TERM,                                    \
-    OPS_COUNT_N = range(24)
+    OPS_COUNT_N = range(25)
     # functions
     Funcs = [
         ('NOP', lambda s: None),
         ('JMPTO', lambda s: s.jump(s.pop())),
         ('JMP', lambda s: s.access('jump')),
-        ('JMPIF', lambda s: s.access(s.pop() and 'jump' or 'none')),
+        ('JZ', lambda s: s.access(s.pop() and 'none' or 'jump')),
+        ('JNZ', lambda s: s.access(s.pop() and 'jump' or 'none')),
         ('LOAD', lambda s: s.access('load')),
         ('SAVE', lambda s: s.access('save')),
         ('INST', lambda s: s.access('inst')),
@@ -43,8 +44,13 @@ class StackVM:
         self.pc = 0
         self.error = ""
 
-    def extend(self, code):
+    def extend(self, code, data=[]):
         self.code.extend(code)
+        self.data.extend(data)
+
+    def replace(self, code, data=[]):
+        self.code.extend(code[len(self.code):])
+        self.data.extend(data[len(self.data):])
 
     def terminated(self):
         if self.error: return True
@@ -56,14 +62,14 @@ class StackVM:
 
     def operand(self, pc):
         end = pc + 2
-        if end >= len(self.code):
+        if end > len(self.code):
             raise IndexError("operand", pc)
         return int.from_bytes(self.code[pc:end], 'little', signed=True)
 
     def access(self, op, value=None):
         '"load" or "save" value at operand'
         end = self.pc + 2
-        if end >= len(self.code):
+        if end > len(self.code):
             return self.term("{} without operands".format(op))
         idx = int.from_bytes(self.code[self.pc:end], 'little', signed=True)
         self.pc = end
@@ -106,14 +112,14 @@ class StackVM:
             if not self.runOnce(): break
 
     def printOnce(self, pc):
-        if pc >= len(self.code): return pc
+        if not 0 <= pc < len(self.code): return pc
         op = self.code[pc]
         contents = [ '%04d' % pc, StackVM.Funcs[op][0] ]
         pc += 1
-        if op in (StackVM.JMP, StackVM.JMPIF, StackVM.LOAD, StackVM.SAVE, StackVM.INST):
+        if op in (StackVM.JMP, StackVM.JZ, StackVM.JNZ, StackVM.LOAD, StackVM.SAVE, StackVM.INST):
             opd = self.operand(pc)
             pc += 2
-            if op in (StackVM.JMP, StackVM.JMPIF):
+            if op in (StackVM.JMP, StackVM.JZ, StackVM.JNZ):
                 contents.append('%+d(=%04d)' % (opd, pc + opd))
             elif op in (StackVM.LOAD, StackVM.SAVE):
                 contents.append('#%d(%s)' % (opd, repr(self.data[opd])))
@@ -123,9 +129,13 @@ class StackVM:
         return pc
 
     def print(self):
+        print('.CODE')
         pc = self.pc
         while pc < len(self.code):
             pc = self.printOnce(pc)
+        print('.DATA')
+        for i, d in enumerate(self.data):
+            print('%04d' % i, d, sep='\t')
 
 assert(len(StackVM.Funcs) == StackVM.OPS_COUNT_N)
 
@@ -139,13 +149,13 @@ if __name__ == "__main__":
                   StackVM.EQUAL,
                   StackVM.DUP,
                   StackVM.PRINT,
-                  StackVM.JMPIF, 7, 0,
-                  # else phase
-                  StackVM.LOAD, 5, 0,
-                  StackVM.PRINT,
-                  StackVM.JMP, 4, 0,
+                  StackVM.JZ, 7, 0,
                   # then phase
                   StackVM.LOAD, 4, 0,
+                  StackVM.PRINT,
+                  StackVM.JMP, 4, 0,
+                  # else phase
+                  StackVM.LOAD, 5, 0,
                   StackVM.PRINT,
                   # terminate
                   StackVM.TERM,

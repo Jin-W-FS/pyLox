@@ -4,6 +4,7 @@ from Scanner import Scanner
 from AstPrinter import LispPrinter
 from Resolver import Resolver
 from Interpreter import Interpreter, stringify
+from Compiler import Compiler, StackVM
 
 class Lox:
 
@@ -12,6 +13,8 @@ class Lox:
         self.tokens = []            # saved tokens from previous uncompleted lines
         self.interp = Interpreter() # for retain inner statements when runPrompt()
         self.resolver = Resolver()
+        self.compiler = Compiler()
+        self.vm = StackVM()
 
     def run(self, data, prompt=False):
         try:
@@ -27,6 +30,12 @@ class Lox:
 
             ids, errors = self.resolver.resolve(ast)
             if errors: return self.alarmErrors('resolver', errors)
+
+            self.compiler.compile(ast)
+            self.vm.replace(self.compiler.code, self.compiler.data)
+            self.vm.print()
+            self.vm.run()
+            if self.vm.stack: print(self.vm.pop())
 
             rlt = self.interp.interpret(ast, ids=ids)
             if rlt is not None: print(stringify(rlt))
