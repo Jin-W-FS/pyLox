@@ -31,11 +31,11 @@ class Lox:
             ids, errors = self.resolver.resolve(ast)
             if errors: return self.alarmErrors('resolver', errors)
 
-            self.compiler.compile(ast)
-            self.vm.replace(self.compiler.code, self.compiler.data)
-            self.vm.print()
-            self.vm.run()
-            if self.vm.stack: print(self.vm.pop())
+            #self.compiler.compile(ast)
+            #self.vm.replace(self.compiler.code, self.compiler.data)
+            #self.vm.print()
+            #self.vm.run()
+            #if self.vm.stack: print(self.vm.pop())
 
             rlt = self.interp.interpret(ast, ids=ids)
             if rlt is not None: print(stringify(rlt))

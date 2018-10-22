@@ -8,7 +8,7 @@ from Functions import *
 class Resolver(Expr.Visitor):
     """resolve variables"""
     def __init__(self):
-        self.globalEnv = { k : True for k in lox_builtins }
+        self.globalEnv = { k : True for k, v in lox_builtins }
         self.envs = [self.globalEnv]
         self.ids = {}
         self.errors = []

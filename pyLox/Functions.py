@@ -56,8 +56,8 @@ class LoxFunc:
         return '<function {}>'.format(self.name)
     def __call__(self, interp, args, **kw):
         checkArity(self.name, len(self.params), args)
-        binding = { k : v for k, v in zip(self.params, args) }
-        binding.update(kw)
+        binding = [(k, v) for k, v in kw.items()]
+        binding.extend(zip(self.params, args))
         with interp.subEnv(env=self.env, initial=binding):
             return interp.visitProgram(self.block)
 
@@ -86,7 +86,7 @@ class LoxClass(LoxClassBase):
         self.name = stmt.name.lexeme
         if lookup is None: lookup = (lambda name:  env.value(name.lexeme))
         self.parent = lookup(stmt.parent) if stmt.parent else LoxClass.Object
-        env = Environment(env, { 'super' : self.parent })
+        env = Environment(env, [('super', self.parent)])
         self.methods = { func.name.lexeme : LoxFunc(func, env) for func in stmt.members }
     def __str__(self):
         return '<class {}>'.format(self.name)
@@ -133,9 +133,9 @@ class LoxInstance:
             return False
 
 # buildins
-lox_builtins = {
-    'printf' : loxfn_printf,
-    'typeof' : loxfn_typeof,
-    'clock'  : loxfn_clock,
-    'Object' : LoxClass.Object,
-}
+lox_builtins = [
+    ('printf', loxfn_printf),
+    ('typeof', loxfn_typeof),
+    ('clock' , loxfn_clock),
+    ('Object', LoxClass.Object),
+]
