@@ -1,55 +1,81 @@
 
+class KVList(list):
+    def append(self, kv):
+        super().append(list(kv))
+    def extend(self, kvs):
+        super().extend([k, v] for k, v in kvs)
+    def lookup(self, key):
+        for i, (k, v) in enumerate(self):
+            if k == key: return i
+        return -1
+    def index(self, key):
+        i = self.lookup(key)
+        if i < 0: raise KeyError(key)
+        return i
+    def __setitem__(self, k, v):
+        # indexed
+        if isinstance(k, int):
+            super().__getitem__[k][1] = v
+            return
+        # else:
+        try:
+            self[self.index(k)][1] = v
+        except KeyError:
+            self.append([k, v])
+    def __getitem__(self, k):
+        # indexed
+        if isinstance(k, int):
+            return super().__getitem__(k)
+        # else:
+        return self[self.index(k)]
+
 
 class Environment:
     """Local env class"""
     def __init__(self, parent=None, initial=None):
-        self.vars = []
-        if initial:
-           for k, v in initial:
-               self.vars.append([k, v])
+        self.vars = KVList()
+        if initial: self.vars.extend(initial)
         self.parent = parent
 
-    def update(self, dic, **kw):
-        self.vars.update(dic, **kw)
-
-    def _lookup(self, name):
-        for i, (k, v) in enumerate(self.vars):
-            if k == name: return i
-        return -1
-
     def define(self, name):
-        if self._lookup(name) >= 0: return False
+        if self.vars.lookup(name) >= 0: return False    # redefine
         self.vars.append([name, None])
         return True
 
-    def lookupEnv(self, name, raiseError=True, depth=None):
+    def lookup(self, name, depth=None):
+        '''lookup [name, ?] at (optionally) depth'''
         env = self
         if depth is None:
             while env:
-                if env._lookup(name) >= 0: return env
-                env = env.parent
-            if raiseError: raise KeyError(name)
-            return None
+                try:
+                    return env.vars[name]
+                except KeyError:
+                    env = env.parent
+            raise KeyError(name)
+        # else
+        if isinstance(depth, int):
+            depth, idx = depth, None
         else:
-            for i in range(depth):
-                env = env.parent
-                if not env: raise KeyError(name)
-            if raiseError: assert(env._lookup(name) >= 0)
-            return env
+            depth, idx = depth
+        for i in range(depth):
+            env = env.parent
+            assert(env is not None)
+        if idx is None:
+            return env.vars[name]
+        else:
+            kv = env.vars[idx]
+            assert(kv[0] == name)
+            return kv
 
     def defined(self, name, depth=None):
-        env = self.lookupEnv(name, raiseError=False, depth=depth)
-        return env and env._lookup(name) >= 0
+        try:
+            if self.lookup(name, depth=depth): return True
+        except KeyError:
+            pass
+        return False
 
     def assign(self, name, value, depth=None):
-        env = self.lookupEnv(name, depth=depth)
-        idx = env._lookup(name)
-        assert(env.vars[idx][0] == name)
-        env.vars[idx][1] = value
-        return value
+        self.lookup(name, depth=depth)[1] = value
 
     def value(self, name, depth=None):
-        env = self.lookupEnv(name, depth=depth)
-        idx = env._lookup(name)
-        assert(env.vars[idx][0] == name)
-        return env.vars[idx][1]
+        return self.lookup(name, depth=depth)[1]
