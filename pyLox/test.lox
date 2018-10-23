@@ -42,31 +42,31 @@ var imAVariable = "here is my value";
 var iAmNil;
 
 var breakfast = "bagels";
-print breakfast; // "bagels".
+print breakfast;	// "bagels".
 breakfast = "beignets";
-print breakfast; // "beignets".
+print breakfast;	// "beignets".
 
 var condition = breakfast == "bagels";
 if (condition) {
   print "yes";
 } else {
-  print "no";
+  print "no";		// 'no'
 }
 
 var a = 1;
 while (a < 10) {
-  print a;
+  print a;			// 1 ~ 9
   a = a + 1;
 }
 
 for (var a = 1; a < 10; a = a + 1) {
-  print a;
+  print a;			// 1 ~ 9
 }
 
 fun average(a, b) {	// override var average
   return (a + b) / 2;
 }
-printf("average of %f and %f is %f\n", 1, 10, average(1, 10));
+printf("average of %f and %f is %f\n", 1, 10, average(1, 10));	// average of 1 and 10 is 5.5
 
 fun odd; // early declaration
 fun even(i) {
@@ -77,7 +77,7 @@ fun even(i) {
 fun odd(i) {
   return even(i - 1);
 }
-print even(10);
+print even(10);		// true
 
 fun counter(i) {
 	fun count() {
@@ -90,16 +90,16 @@ fun counter(i) {
 var cnt1 = counter(0);
 var cnt2 = counter(10);
 for (var i = 0; i < 5; i = i + 1) {
-	printf("%d, %d\n", cnt1(), cnt2());
+	printf("%d, %d\n", cnt1(), cnt2());		// 1, 11 ~ 5, 15
 }
 
 fun count(n) {
   if (n > 1) count(n - 1);
   print n;
 }
-count(3);
+count(3);			// 1 ~ 3
 
-print lambda(a, b) { a + b } (5, 7);
+print lambda(a, b) { a + b } (5, 7);	// 12
 
 class Breakfast {
   init(meat, bread) {
@@ -116,8 +116,7 @@ class Breakfast {
 }
 
 var baconAndToast = Breakfast("bacon", "toast");
-baconAndToast.serve("Dear Reader");
-// "Enjoy your bacon and toast, Dear Reader."
+baconAndToast.serve("Dear Reader");	// "Enjoy your bacon and toast, Dear Reader."
 
 class Brunch < Breakfast {
   init(meat, bread, drink) {
@@ -130,9 +129,9 @@ class Brunch < Breakfast {
 }
 
 var benedict = Brunch("ham", "toast", "English muffin");
-benedict.serve("Noble Reader");
-benedict.cook();
-benedict.askDrink();
+benedict.serve("Noble Reader");	// "Enjoy your ham and toast, Noble Reader."
+benedict.cook();				// "Eggs a-fryin'!"
+benedict.askDrink();			// "How about a Blood Mary?"
 
 // test super
 class A {
@@ -147,8 +146,8 @@ class B < A {
 }
 class C < B {}
 
-C().test();	// "A method"
-C.test_class_method(); // "A class method"
+C().test();					// "A method"
+C.test_class_method();		// "A class method"
 
 // var ResolveVarError = ResolveVarError; // should resolve to en error
 // class ResolveClsError < ResolveClsError { }  // should resolve to en error

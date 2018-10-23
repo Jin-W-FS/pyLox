@@ -102,15 +102,15 @@ class Interpreter(Expr.Visitor):
         return env.value(name.lexeme)
 
     def setval1(self, name, valueExpr):
-        depth = None if self.ids is None else self.ids[name]
-        env = self.globalEnv if depth == -1 else self.env
+        depth = self.ids[name]
+        env = self.globalEnv if depth[0] == -1 else self.env
         if not env.defined(name.lexeme, depth=depth):
             raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
         return env.assign(name.lexeme, self.visit(valueExpr), depth=depth)
 
     def getval1(self, name):
-        depth = None if self.ids is None else self.ids[name]
-        env = self.globalEnv if depth == -1 else self.env
+        depth = self.ids[name]
+        env = self.globalEnv if depth[0] == -1 else self.env
         if not env.defined(name.lexeme, depth=depth):
             if name.type == TokenType.IDENTIFIER:
                 raise InterpError(name.line, "var {} used without being declared".format(name.lexeme))
@@ -118,9 +118,9 @@ class Interpreter(Expr.Visitor):
                 raise InterpError(name.line, "keyword '{}' should be used inside a class".format(name.lexeme))
         if name.type == TokenType.SUPER: # trick here
             parent = env.value('super', depth=depth)    # super class
-            updepth = None if self.ids is None else (depth - 1)
+            updepth = depth[0] - 1
             if not env.defined('this', depth=updepth): return parent    # class method
-            return env.value('this', depth=updepth).super(parent)
+            return env.value('this', depth=(updepth, 0)).super(parent)
         return env.value(name.lexeme, depth=depth)
 
     def visitProgram(self, prog):

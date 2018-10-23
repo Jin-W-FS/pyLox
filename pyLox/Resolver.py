@@ -3,47 +3,49 @@ import Expr
 from Scanner import *
 from LoxError import *
 from Functions import *
-
+from Environment import *
 
 class Resolver(Expr.Visitor):
     """resolve variables"""
     def __init__(self):
-        self.globalEnv = { k : True for k, v in lox_builtins }
-        self.envs = [self.globalEnv]
+        self.env = Environment(initial=[(k, True) for k, v in lox_builtins])
         self.ids = {}
         self.errors = []
         self.currentLoop = self.currentFunction = 0
 
     @contextmanager
     def subEnv(self, initial=None):
-        env = dict()
-        if initial is not None: env.update(initial)
-        self.envs.append(env)
+        saved = self.env
+        self.env = Environment(parent=self.env, initial=initial)
         try:
             yield
         finally:
-            self.envs.pop()
+            self.env = saved
 
     def defineVar(self, name, inited=False, check=True):
-        env = self.envs[-1]
-        if check and name.lexeme in env:
-            raise ResolveError(name.line, "duplicated declaration of var {}".format(name.lexeme))
-        env[name.lexeme] = inited
+        succeed = self.env.define(name.lexeme, inited)
+        if not succeed:
+            if check:
+                raise ResolveError(name.line, "duplicated declaration of var {}".format(name.lexeme))
+            else:
+                self.env.assign(name.lexeme, inited)
 
     def resolveGet(self, name):
-        for i, env in enumerate(reversed(self.envs)):
-            if name.lexeme in env:
-                if not env[name.lexeme]:
-                    raise ResolveError(name.line, "var {} used without being initialized".format(name.lexeme))
-                return -1 if env == self.globalEnv else i
-        raise ResolveError(name.line, "var {} used without being defined".format(name.lexeme))
+        try:
+            pos, kv = self.env.index(name.lexeme)
+        except KeyError:
+            raise ResolveError(name.line, "var {} used without being defined".format(name.lexeme))
+        if not kv[1]:
+            raise ResolveError(name.line, "var {} used without being initialized".format(name.lexeme))
+        return pos
 
     def resolveSet(self, name):
-        for i, env in enumerate(reversed(self.envs)):
-            if name.lexeme in env:
-                env[name.lexeme] = True
-                return -1 if env == self.globalEnv else i
-        raise ResolveError(name.line, "var {} used without being defined".format(name.lexeme))
+        try:
+            pos, kv = self.env.index(name.lexeme)
+        except KeyError:
+            raise ResolveError(name.line, "var {} used without being defined".format(name.lexeme))
+        kv[1] = True
+        return pos
 
     def resolve(self, ast):
         self.errors = []
@@ -70,7 +72,7 @@ class Resolver(Expr.Visitor):
     def visitFuncStmt(self, stmt, isMethod=False):
         if stmt.name:
             self.defineVar(stmt.name, inited=True, check=False)
-        with self.subEnv(initial={'this':True}):
+        with self.subEnv(initial=([('this',True)] if isMethod else [])):
             for p in stmt.params: self.defineVar(p, inited=True)
             self.currentFunction += 1
             self.visitProgram(stmt.block)
@@ -81,7 +83,7 @@ class Resolver(Expr.Visitor):
         if stmt.parent:
             self.ids[stmt.parent] = self.resolveGet(stmt.parent)
         self.resolveSet(stmt.name)
-        with self.subEnv(initial={ 'super' : True }):
+        with self.subEnv(initial=[('super',True)]):
             for method in stmt.members:
                 self.visitFuncStmt(method, isMethod=True)
 

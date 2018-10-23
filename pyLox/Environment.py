@@ -37,9 +37,9 @@ class Environment:
         if initial: self.vars.extend(initial)
         self.parent = parent
 
-    def define(self, name):
+    def define(self, name, initial=None):
         if self.vars.lookup(name) >= 0: return False    # redefine
-        self.vars.append([name, None])
+        self.vars.append([name, initial])
         return True
 
     def lookup(self, name, depth=None):
@@ -66,6 +66,17 @@ class Environment:
             kv = env.vars[idx]
             assert(kv[0] == name)
             return kv
+
+    def index(self, name):
+        '''search name, return (depth, index), kv'''
+        env, depth = self, 0
+        while env:
+            idx = env.vars.lookup(name)
+            if idx >= 0:
+                if not env.parent: depth = -1
+                return (depth, idx), env.vars[idx]    # global env => -1
+            env, depth = env.parent, depth + 1
+        raise KeyError(name)
 
     def defined(self, name, depth=None):
         try:
