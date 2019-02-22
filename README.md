@@ -19,7 +19,7 @@ Data-flow graph:
 ```
 
 Language features and examples:
-```c++
+```javascript
 // base types: boolean, number and string
 assert true == !false;
 assert 2 - 1 >= 0;
