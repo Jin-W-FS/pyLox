@@ -89,9 +89,15 @@ for (var i = 0; i < 5; i = i + 1) {
 	printf("%d, %d\n", cnt1(), cnt2());
 }
 
-print lambda(a, b) { a + b } (cnt1(), cnt2());
+fun count(n) {
+  if (n > 1) count(n - 1);
+  print n;
+}
+count(3);
 
+print lambda(a, b) { a + b } (5, 7);
 
+/*
 class Breakfast {
   init(meat, bread) {
     this.meat = meat;
@@ -123,3 +129,5 @@ class Brunch < Breakfast {
 
 var benedict = Brunch("ham", "English muffin");
 benedict.serve("Noble Reader");
+
+*/

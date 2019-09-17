@@ -96,7 +96,7 @@ class Scanner:
         try:
             v = float(s)
         except ValueError:
-            raise LoxError(self.line, 'parse "{}" as number failed'.format(s))
+            raise ParserError(self.line, 'parse "{}" as number failed'.format(s))
         self.addToken(TokenType.NUMBER, v)
 
     def scanString(self):
@@ -114,12 +114,12 @@ class Scanner:
             else:
                 escape = False  # escape only one char
         if not ended:
-            raise LoxError(self.line, 'string terminated at unexpected position')
+            raise ParserError(self.line, 'string terminated at unexpected position')
         s = self.curToken()
         try:
             v = eval(s) # evaluate string as python string
         except SyntaxError:
-            raise LoxError(self.line, 'parse "{}" as string failed'.format(s))
+            raise ParserError(self.line, 'parse "{}" as string failed'.format(s))
         self.addToken(TokenType.STRING, v)
 
     def scanSymbol(self):
@@ -129,14 +129,20 @@ class Scanner:
                 if self.peek() == '=':
                     self.advance()
             elif c == '/':
-                if self.peek() == '/':  # comment
-                    while not self.isAtEnd() and self.advance() != '\n':
+                if self.peek() == '/':  # inline comment
+                    while not (self.isAtEnd() or self.advance() == '\n'):
                         pass
                     return
+                elif self.peek() == '*':  # crossline comments
+                    while not self.isAtEnd():
+                        if self.advance() == '*' and self.peek() == '/':
+                            self.advance()
+                            return
+                    raise ParserError(self.line, 'unterminated block comment')
         s = self.curToken()
         key = TokenType.KeyMap.get(s)
         if key is None:
-            raise LoxError(self.line, 'unexpected character "{}"'.format(s))
+            raise ParserError(self.line, 'unexpected character "{}"'.format(s))
         self.addToken(key)
 
     def isAtEnd(self):
