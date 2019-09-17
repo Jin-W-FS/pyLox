@@ -75,37 +75,22 @@ fun average(a, b) {	// override var average
 }
 printf("average of %f and %f is %f\n", 1, 10, average(1, 10));
 
-
-fun counter() {
-	var i = 0;
+fun counter(i) {
 	fun count() {
 		i = i + 1;
-		return i;
+		return i
 	}
 	return count;
 }
 
-var cntr1 = counter();
-var cntr2 = counter();
+var cnt1 = counter(0);
+var cnt2 = counter(10);
 for (var i = 0; i < 5; i = i + 1) {
-	print cntr1();
-}
-for (var i = 0; i < 5; i = i + 1) {
-	print cntr2();
+	printf("%d, %d\n", cnt1(), cnt2());
 }
 
-fun returnFunction() {
-  var outside = "outside";
+print lambda(a, b) { a + b } (cnt1(), cnt2());
 
-  fun inner() {
-    print outside;
-  }
-
-  return inner;
-}
-
-var fn = returnFunction();
-print fn();
 
 class Breakfast {
   init(meat, bread) {

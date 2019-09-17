@@ -10,9 +10,9 @@ class TokenType(Enum):
     GREATER, GREATER_EQUAL,                          \
     LESS, LESS_EQUAL,                                \
     AND, BREAK, CLASS, CONTINUE, ELSE, FALSE, FUN, FOR, IF,    \
-    NIL, OR, PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,    \
+    LAMBDA, NIL, OR, PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,    \
     IDENTIFIER, STRING, NUMBER,                      \
-    EOF = range(41)
+    EOF = range(42)
 
 TokenType.Keys = (
     '(', ')', '{', '}',
@@ -22,7 +22,7 @@ TokenType.Keys = (
     '>', '>=',
     '<', '<=',
     'and', 'break', 'class', 'continue', 'else', 'false', 'fun', 'for', 'if',
-    'nil', 'or', 'print', 'return', 'super', 'this', 'true', 'var', 'while',
+    'lambda', 'nil', 'or', 'print', 'return', 'super', 'this', 'true', 'var', 'while',
     )
 TokenType.KeyMap = { k : TokenType(i) for i, k in enumerate(TokenType.Keys) }
 

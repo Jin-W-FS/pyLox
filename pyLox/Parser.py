@@ -93,7 +93,10 @@ class Parser(object):
         return Expr.VarStmt(name, initial)
 
     def funStmt(self):
-        name = self.consume(TokenType.IDENTIFIER)   # support anonymous functions
+        name = self.consume(TokenType.IDENTIFIER, exp='Identifier')
+        return self.funExpr(name)
+
+    def funExpr(self, name=None):
         self.consume(TokenType.LEFT_PAREN, exp='(')
         params = []
         if not self.consume(TokenType.RIGHT_PAREN):
@@ -152,9 +155,9 @@ class Parser(object):
         return Expr.ExprStmt(ast)
 
     def endStmt(self):
-        tok = self.consume(TokenType.EOF, TokenType.SEMICOLON, exp=';')
-        if tok.type == TokenType.EOF: self.current -= 1 # not consume EOF
-        return tok
+        if self.match(TokenType.EOF, TokenType.RIGHT_BRACE): return True
+        if self.consume(TokenType.SEMICOLON, exp=';'): return True
+        return False
 
     def expression(self):
         return self.assign()
@@ -234,5 +237,7 @@ class Parser(object):
             ast = self.expression()
             self.consume(TokenType.RIGHT_PAREN, exp=')')
             return Expr.Grouping(ast)
+        elif self.consume(TokenType.LAMBDA):
+            return self.funExpr()
         else:
             raise self.errUnexpToken("primary expr")
